@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String    @unique
+  password    String
+  role        Role      @default(CUSTOMER)
+  profileInfo Json?
+  properties  Property[]
+  bookings    Booking[]
+  reviews     Review[]
+  messagesSent Message[] @relation("sender")
+  messagesReceived Message[] @relation("receiver")
+  verificationStatus String @default("PENDING")
+  passwordReset PasswordReset?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  PROPERTY_MANAGER
+  CUSTOMER
+}
+
+enum PropertyStatus {
+  ACTIVE
+  PENDING
+  MAINTENANCE
+  ARCHIVED
+}
+
+model Property {
+  id           String    @id @default(uuid())
+  name         String
+  description  String
+  location     String
+  propertyType String
+  managerId    String
+  manager      User      @relation(fields: [managerId], references: [id])
+  status       PropertyStatus @default(ACTIVE)
+  amenities    Json?
+  photos       String[]
+  lat          Float?
+  lng          Float?
+  price        Float
+  bookings     Booking[]
+  reviews      Review[]
+  pricingRules PricingRule[]
+  cancellationPolicy CancellationPolicy?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Booking {
+  id          String    @id @default(uuid())
+  propertyId  String
+  customerId  String
+  startDate   DateTime
+  endDate     DateTime
+  status      String
+  price       Float
+  property    Property  @relation(fields: [propertyId], references: [id])
+  customer    User      @relation(fields: [customerId], references: [id])
+  payments    Payment[]
+  review      Review?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  bookingId     String
+  amount        Float
+  method        String
+  status        String
+  transactionId String?
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Review {
+  id          String    @id @default(uuid())
+  bookingId   String    @unique
+  customerId  String
+  propertyId  String
+  rating      Int
+  comment     String
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+  customer    User      @relation(fields: [customerId], references: [id])
+  property    Property  @relation(fields: [propertyId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  senderId    String
+  receiverId  String
+  messageText String
+  sender      User      @relation("sender", fields: [senderId], references: [id])
+  receiver    User      @relation("receiver", fields: [receiverId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PricingRule {
+  id              String    @id @default(uuid())
+  propertyId      String
+  startDate       DateTime
+  endDate         DateTime
+  priceAdjustment Float
+  type            String
+  property        Property  @relation(fields: [propertyId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model CancellationPolicy {
+  id                String    @id @default(uuid())
+  propertyId        String    @unique
+  policyName        String
+  description       String
+  cancellationWindow Int
+  refundPercentage  Int
+  property          Property  @relation(fields: [propertyId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+} 

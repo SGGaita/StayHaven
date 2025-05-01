@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Main house shape -->
+  <path 
+    d="M16 4L4 14V28H28V14L16 4Z" 
+    fill="#FF385C"
+    stroke="#FF385C"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Roof highlight -->
+  <path 
+    d="M16 4L4 14H28L16 4Z" 
+    fill="#FF6B8B"
+    stroke="#FF6B8B"
+    stroke-width="2"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Door -->
+  <path 
+    d="M13 20H19V28H13V20Z" 
+    fill="white"
+    stroke="white"
+    stroke-width="1"
+    stroke-linejoin="round"
+  />
+  
+  <!-- Window -->
+  <rect 
+    x="14" 
+    y="15" 
+    width="4" 
+    height="3" 
+    fill="white"
+    stroke="white"
+    stroke-width="1"
+  />
+</svg> 
