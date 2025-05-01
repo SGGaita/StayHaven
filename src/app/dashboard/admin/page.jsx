@@ -113,12 +113,12 @@ export default function AdminDashboard() {
           credentials: 'include',
         });
         
+        const statsData = await statsResponse.json();
+        
         if (!statsResponse.ok) {
-          const errorData = await statsResponse.json();
-          throw new Error(errorData.error || 'Failed to fetch admin stats');
+          throw new Error(statsData.error || 'Failed to fetch admin stats');
         }
 
-        const statsData = await statsResponse.json();
         setStats(statsData);
 
         // Fetch recent activities
@@ -126,16 +126,16 @@ export default function AdminDashboard() {
           credentials: 'include',
         });
         
+        const activitiesData = await activitiesResponse.json();
+        
         if (!activitiesResponse.ok) {
-          const errorData = await activitiesResponse.json();
-          throw new Error(errorData.error || 'Failed to fetch activities');
+          throw new Error(activitiesData.error || 'Failed to fetch activities');
         }
 
-        const activitiesData = await activitiesResponse.json();
         setRecentActivities(activitiesData);
       } catch (error) {
         console.error('Error fetching admin data:', error);
-        setError(error.message);
+        setError(error.message || 'An error occurred while fetching data');
       } finally {
         setLoading(false);
       }

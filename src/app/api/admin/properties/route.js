@@ -55,10 +55,11 @@ export async function GET(request) {
     const properties = await prisma.property.findMany({
       where,
       include: {
-        owner: {
+        manager: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
           },
         },
@@ -134,10 +135,11 @@ export async function PUT(request) {
       where: { id },
       data: updateData,
       include: {
-        owner: {
+        manager: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
           },
         },

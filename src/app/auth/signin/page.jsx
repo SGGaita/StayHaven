@@ -38,7 +38,7 @@ export default function SignIn() {
   // Check if user is already authenticated and redirect accordingly
   useEffect(() => {
     if (isAuthenticated && userRole) {
-      logger.debug('auth', 'User already authenticated, redirecting', { role: userRole });
+      logger.authDebug('redirect', 'User already authenticated, redirecting', { role: userRole });
       handleRoleBasedRedirect(userRole);
     }
   }, [isAuthenticated, userRole]);
@@ -56,7 +56,7 @@ export default function SignIn() {
         router.push('/dashboard');
         break;
       default:
-        logger.error('auth', 'Unknown role encountered', { role });
+        logger.authError('redirect', 'Unknown role encountered', { role });
         router.push('/dashboard');
     }
   };
@@ -74,7 +74,7 @@ export default function SignIn() {
     setLocalError('');
     dispatch(setLoading(true));
 
-    logger.debug('auth', 'Attempting sign in', { email: formData.email });
+    logger.authDebug('signin', 'Attempting sign in', { email: formData.email });
 
     try {
       const response = await fetch('/api/auth/signin', {
@@ -91,7 +91,7 @@ export default function SignIn() {
         throw new Error(data.message || 'Failed to sign in');
       }
 
-      logger.info('auth', 'Sign in successful', {
+      logger.authInfo('signin', 'Sign in successful', {
         email: formData.email,
         role: data.user.role,
       });
@@ -102,7 +102,7 @@ export default function SignIn() {
       // Navigate based on user role
       handleRoleBasedRedirect(data.user.role);
     } catch (err) {
-      logger.error('auth', 'Sign in error', {
+      logger.authError('signin', 'Sign in error', {
         error: err.message,
         email: formData.email,
       });
@@ -114,7 +114,7 @@ export default function SignIn() {
   };
 
   const handleGoogleSignIn = async () => {
-    logger.debug('auth', 'Google sign-in attempted');
+    logger.authDebug('google-signin', 'Google sign-in attempted');
     setLocalError('Google sign-in not implemented yet');
   };
 

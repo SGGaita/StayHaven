@@ -105,20 +105,28 @@ export default function AdminSettings() {
     try {
       setError(null);
       setSuccess(null);
-      const response = await fetch(`/api/admin/settings/${section}`, {
+      const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-        body: JSON.stringify(settings[section]),
+        body: JSON.stringify({
+          section,
+          settings: settings[section],
+        }),
       });
 
       if (!response.ok) {
         throw new Error(`Failed to update ${section} settings`);
       }
 
-      setSuccess(`${section.charAt(0).toUpperCase() + section.slice(1)} settings updated successfully`);
+      const data = await response.json();
+      if (data.success) {
+        setSuccess(`${section.charAt(0).toUpperCase() + section.slice(1)} settings updated successfully`);
+      } else {
+        throw new Error(data.error || `Failed to update ${section} settings`);
+      }
     } catch (err) {
       setError(err.message);
     }

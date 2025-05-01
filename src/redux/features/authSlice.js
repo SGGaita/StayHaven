@@ -9,10 +9,10 @@ const loadState = () => {
       return undefined;
     }
     const state = JSON.parse(serializedState);
-    logger.debug('auth', 'Loaded auth state from localStorage', { isAuthenticated: state.isAuthenticated });
+    logger.authDebug('load-state', 'Loaded auth state from localStorage', { isAuthenticated: state.isAuthenticated });
     return state;
   } catch (err) {
-    logger.error('auth', 'Failed to load auth state from localStorage', { error: err.message });
+    logger.authError('load-state', 'Failed to load auth state from localStorage', { error: err.message });
     return undefined;
   }
 };
@@ -47,22 +47,19 @@ const authSlice = createSlice({
       
       try {
         localStorage.setItem('auth', JSON.stringify(stateToSave));
-        logger.info('auth', 'User authenticated and state persisted', {
+        logger.authInfo('login', 'User authenticated and state persisted', {
           userId: action.payload.id,
           role: action.payload.role
         });
-        logger.activity(action.payload.id, 'LOGIN_SUCCESS', {
-          role: action.payload.role,
-          email: action.payload.email
-        });
       } catch (err) {
-        logger.error('auth', 'Failed to persist auth state', { error: err.message });
+        logger.authError('persist-state', 'Failed to persist auth state', { error: err.message });
       }
     },
     logout: (state) => {
       // Log the logout activity before clearing the state
       if (state.user) {
-        logger.activity(state.user.id, 'LOGOUT', {
+        logger.authInfo('logout', 'User logged out', {
+          userId: state.user.id,
           role: state.user.role,
           email: state.user.email
         });
@@ -77,15 +74,15 @@ const authSlice = createSlice({
       // Clear from localStorage
       try {
         localStorage.removeItem('auth');
-        logger.info('auth', 'User logged out and state cleared');
+        logger.authDebug('clear-state', 'Auth state cleared from storage');
       } catch (err) {
-        logger.error('auth', 'Failed to clear auth state', { error: err.message });
+        logger.authError('clear-state', 'Failed to clear auth state', { error: err.message });
       }
     },
     setError: (state, action) => {
       state.error = action.payload;
       state.loading = false;
-      logger.error('auth', 'Authentication error occurred', { error: action.payload });
+      logger.authError('auth-error', 'Authentication error occurred', { error: action.payload });
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
@@ -96,7 +93,7 @@ const authSlice = createSlice({
       try {
         localStorage.setItem('auth', JSON.stringify(state));
       } catch (err) {
-        logger.error('auth', 'Failed to update last activity', { error: err.message });
+        logger.authError('update-activity', 'Failed to update last activity', { error: err.message });
       }
     }
   }

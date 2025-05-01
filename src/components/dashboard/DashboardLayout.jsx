@@ -41,7 +41,7 @@ import {
   Star as StarIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectCurrentUser, clearUser } from '@/redux/features/authSlice';
+import { selectCurrentUser, logout } from '@/redux/features/authSlice';
 
 const drawerWidth = 240;
 
@@ -166,12 +166,21 @@ export default function DashboardLayout({ children }) {
       return;
     }
 
-    // Redirect admin users to admin dashboard
+    // Get the current path from the window location
+    const currentPath = window.location.pathname;
+
+    // For admin users, only redirect if they're not in any admin-related path
     if ((user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') && 
-        !router.pathname?.startsWith('/dashboard/admin')) {
+        !currentPath.startsWith('/dashboard/admin')) {
       router.push('/dashboard/admin');
     }
-  }, [user, router, router.pathname]);
+
+    // For non-admin users, redirect to their dashboard if they try to access admin routes
+    if (user.role !== 'ADMIN' && user.role !== 'SUPER_ADMIN' && 
+        currentPath.startsWith('/dashboard/admin')) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
 
   // Get menu items based on user role
   const menuItems = getMenuItems(user?.role);
@@ -207,7 +216,7 @@ export default function DashboardLayout({ children }) {
   };
 
   const handleLogout = () => {
-    dispatch(clearUser());
+    dispatch(logout());
     router.push('/auth/signin');
   };
 

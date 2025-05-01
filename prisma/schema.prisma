@@ -148,4 +148,14 @@ model CancellationPolicy {
   property          Property  @relation(fields: [propertyId], references: [id])
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+model Settings {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  value         Json
+  description   String?
+  category      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 } 

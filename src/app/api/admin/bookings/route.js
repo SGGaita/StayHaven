@@ -10,9 +10,14 @@ const buildWhereClause = (search, status) => {
   if (search) {
     where.OR = [
       { id: { contains: search } },
-      { guest: { name: { contains: search, mode: 'insensitive' } } },
-      { guest: { email: { contains: search, mode: 'insensitive' } } },
-      { property: { title: { contains: search, mode: 'insensitive' } } },
+      { customer: { 
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      }},
+      { property: { name: { contains: search, mode: 'insensitive' } } },
     ];
   }
 
@@ -55,23 +60,24 @@ export async function GET(request) {
     const bookings = await prisma.booking.findMany({
       where,
       include: {
-        guest: {
+        customer: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            avatar: true,
           },
         },
         property: {
           select: {
             id: true,
-            title: true,
+            name: true,
             location: true,
-            owner: {
+            manager: {
               select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
               },
             },
@@ -130,23 +136,24 @@ export async function PUT(request) {
       where: { id },
       data: updateData,
       include: {
-        guest: {
+        customer: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            avatar: true,
           },
         },
         property: {
           select: {
             id: true,
-            title: true,
+            name: true,
             location: true,
-            owner: {
+            manager: {
               select: {
                 id: true,
-                name: true,
+                firstName: true,
+                lastName: true,
                 email: true,
               },
             },

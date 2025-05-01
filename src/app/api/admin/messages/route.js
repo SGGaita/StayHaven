@@ -9,10 +9,21 @@ const buildWhereClause = (search, status, type) => {
 
   if (search) {
     where.OR = [
-      { subject: { contains: search, mode: 'insensitive' } },
-      { message: { contains: search, mode: 'insensitive' } },
-      { sender: { name: { contains: search, mode: 'insensitive' } } },
-      { sender: { email: { contains: search, mode: 'insensitive' } } },
+      { messageText: { contains: search, mode: 'insensitive' } },
+      { sender: { 
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      }},
+      { receiver: { 
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' } },
+          { lastName: { contains: search, mode: 'insensitive' } },
+          { email: { contains: search, mode: 'insensitive' } }
+        ]
+      }},
     ];
   }
 
@@ -63,15 +74,16 @@ export async function GET(request) {
         sender: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            avatar: true,
           },
         },
-        assignedTo: {
+        receiver: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
           },
         },
@@ -83,8 +95,21 @@ export async function GET(request) {
       },
     });
 
+    // Format messages for response
+    const formattedMessages = messages.map(message => ({
+      ...message,
+      sender: {
+        ...message.sender,
+        name: `${message.sender.firstName} ${message.sender.lastName}`,
+      },
+      receiver: {
+        ...message.receiver,
+        name: `${message.receiver.firstName} ${message.receiver.lastName}`,
+      },
+    }));
+
     return NextResponse.json({
-      messages,
+      messages: formattedMessages,
       pagination: {
         total,
         pages: Math.ceil(total / limit),
@@ -131,22 +156,36 @@ export async function PUT(request) {
         sender: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
-            avatar: true,
           },
         },
-        assignedTo: {
+        receiver: {
           select: {
             id: true,
-            name: true,
+            firstName: true,
+            lastName: true,
             email: true,
           },
         },
       },
     });
 
-    return NextResponse.json(updatedMessage);
+    // Format message for response
+    const formattedMessage = {
+      ...updatedMessage,
+      sender: {
+        ...updatedMessage.sender,
+        name: `${updatedMessage.sender.firstName} ${updatedMessage.sender.lastName}`,
+      },
+      receiver: {
+        ...updatedMessage.receiver,
+        name: `${updatedMessage.receiver.firstName} ${updatedMessage.receiver.lastName}`,
+      },
+    };
+
+    return NextResponse.json(formattedMessage);
   } catch (error) {
     console.error('Error in admin messages PUT:', error);
     return NextResponse.json(

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import logger from '@/lib/logger';
+import logger from '@/lib/server-logger';
 import { validateEmail, validateRequiredFields, logValidationError } from '@/lib/validation';
 import { authRateLimiter, rateLimitMiddleware } from '@/lib/rateLimit';
 
@@ -16,7 +16,7 @@ export async function POST(request) {
     // Validate required fields
     const requiredFieldsValidation = validateRequiredFields({ email, password });
     if (!requiredFieldsValidation.isValid) {
-      logValidationError('signin', requiredFieldsValidation.error);
+      logger.authError('signin-validation', requiredFieldsValidation.error);
       return NextResponse.json(
         { error: requiredFieldsValidation.error },
         { status: 400 }
@@ -26,7 +26,7 @@ export async function POST(request) {
     // Validate email format
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
-      logValidationError('signin', emailValidation.error, { email });
+      logger.authError('signin-validation', emailValidation.error, { email });
       return NextResponse.json(
         { error: emailValidation.error },
         { status: 400 }
@@ -60,7 +60,7 @@ export async function POST(request) {
     // Remove sensitive data before sending response
     const { password: _, ...userWithoutPassword } = user;
 
-    logger.info('auth', 'User signed in successfully', {
+    logger.authInfo('signin', 'User signed in successfully', {
       userId: user.id,
       email: user.email,
     });
@@ -69,7 +69,7 @@ export async function POST(request) {
       user: userWithoutPassword,
     });
   } catch (error) {
-    logger.error('auth', 'Error during sign in', {
+    logger.authError('signin', 'Error during sign in', {
       error: error.message,
       stack: error.stack,
     });
