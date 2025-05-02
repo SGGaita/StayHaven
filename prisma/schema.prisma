@@ -25,6 +25,7 @@ model User {
   messagesReceived Message[] @relation("receiver")
   verificationStatus String @default("PENDING")
   passwordReset PasswordReset?
+  subscription Subscription?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   createdTemplates EmailTemplate[] @relation("templateCreator")
@@ -174,4 +175,75 @@ model EmailTemplate {
   updatedAt   DateTime @updatedAt
   creator     User     @relation("templateCreator", fields: [createdBy], references: [id])
   updater     User?    @relation("templateUpdater", fields: [updatedBy], references: [id])
+}
+
+model Subscription {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  planId          String
+  plan            Plan     @relation(fields: [planId], references: [id])
+  status          SubscriptionStatus @default(ACTIVE)
+  startDate       DateTime
+  endDate         DateTime
+  autoRenew       Boolean  @default(true)
+  paymentMethod   Json?
+  lastPayment     DateTime?
+  nextPayment     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  description     String
+  price           Float
+  interval        String   // monthly, yearly
+  features        Json
+  maxProperties   Int
+  isActive        Boolean  @default(true)
+  subscriptions   Subscription[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+  TRIAL
+}
+
+model Navigation {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  items     Json     // Array of menu items with links
+  logo      String?  // URL to logo image
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Page {
+  id        String    @id @default(uuid())
+  slug      String    @unique
+  title     String
+  sections  Section[]
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Section {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id])
+  name      String   // e.g., "hero", "features", "testimonials"
+  content   Json     // Flexible content structure
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 } 

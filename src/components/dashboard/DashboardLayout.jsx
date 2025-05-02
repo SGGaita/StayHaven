@@ -39,6 +39,10 @@ import {
   Add as AddIcon,
   Logout as LogoutIcon,
   Star as StarIcon,
+  Link as LinkIcon,
+  Article as ArticleIcon,
+  Email as EmailIcon,
+  Security as SecurityIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentUser, logout } from '@/redux/features/authSlice';
@@ -55,18 +59,66 @@ const getMenuItems = (role) => {
 
   const roleBasedItems = {
     ADMIN: [
-      { text: 'Users', icon: <PersonIcon />, path: '/dashboard/admin/users' },
-      { text: 'Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
-      { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
-      { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
-      { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
+      {
+        category: 'Management',
+        items: [
+          { text: 'Users', icon: <PersonIcon />, path: '/dashboard/admin/users' },
+          { text: 'Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
+          { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
+        ],
+      },
+      {
+        category: 'Communication',
+        items: [
+          { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
+        ],
+      },
+      {
+        category: 'Content Management',
+        items: [
+          { text: 'Navigation', icon: <LinkIcon />, path: '/dashboard/admin/cms/navigation' },
+          { text: 'Pages', icon: <ArticleIcon />, path: '/dashboard/admin/cms/pages' },
+          { text: 'Email Templates', icon: <EmailIcon />, path: '/dashboard/admin/cms/email-templates' },
+        ],
+      },
+      {
+        category: 'System',
+        items: [
+          { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
+          { text: 'Security', icon: <SecurityIcon />, path: '/dashboard/admin/security' },
+        ],
+      },
     ],
     SUPER_ADMIN: [
-      { text: 'Users', icon: <PersonIcon />, path: '/dashboard/admin/users' },
-      { text: 'Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
-      { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
-      { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
-      { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
+      {
+        category: 'Management',
+        items: [
+          { text: 'Users', icon: <PersonIcon />, path: '/dashboard/admin/users' },
+          { text: 'Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
+          { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
+        ],
+      },
+      {
+        category: 'Communication',
+        items: [
+          { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
+        ],
+      },
+      {
+        category: 'Content Management',
+        items: [
+          { text: 'Navigation', icon: <LinkIcon />, path: '/dashboard/admin/cms/navigation' },
+          { text: 'Pages', icon: <ArticleIcon />, path: '/dashboard/admin/cms/pages' },
+          { text: 'Email Templates', icon: <EmailIcon />, path: '/dashboard/admin/cms/email-templates' },
+        ],
+      },
+      {
+        category: 'System',
+        items: [
+          { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
+          { text: 'Security', icon: <SecurityIcon />, path: '/dashboard/admin/security' },
+        ],
+      },
     ],
     PROPERTY_MANAGER: [
       { text: 'My Properties', icon: <ApartmentIcon />, path: '/dashboard/properties' },
@@ -260,36 +312,79 @@ export default function DashboardLayout({ children }) {
       </Toolbar>
       <Divider />
       <List sx={{ pt: 2 }}>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => handleNavigation(item.path)}
-              sx={{
-                borderRadius: '0 20px 20px 0',
-                mr: 2,
-                mb: 0.5,
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
-                '&.Mui-selected': {
-                  backgroundColor: 'primary.light',
+        {menuItems.map((item, index) => (
+          item.category ? (
+            <Box key={item.category}>
+              <Typography
+                variant="overline"
+                color="text.secondary"
+                sx={{ px: 3, py: 1.5, display: 'block' }}
+              >
+                {item.category}
+              </Typography>
+              {item.items.map((subItem) => (
+                <ListItem key={subItem.text} disablePadding>
+                  <ListItemButton
+                    onClick={() => handleNavigation(subItem.path)}
+                    sx={{
+                      borderRadius: '0 20px 20px 0',
+                      mr: 2,
+                      mb: 0.5,
+                      '&:hover': {
+                        backgroundColor: 'action.hover',
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: 'primary.light',
+                        '&:hover': {
+                          backgroundColor: 'primary.light',
+                        },
+                      },
+                    }}
+                    selected={router.pathname === subItem.path}
+                  >
+                    <ListItemIcon sx={{ minWidth: 40 }}>{subItem.icon}</ListItemIcon>
+                    <ListItemText 
+                      primary={subItem.text} 
+                      primaryTypographyProps={{
+                        fontSize: '0.9rem',
+                        fontWeight: router.pathname === subItem.path ? 600 : 400,
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </Box>
+          ) : (
+            <ListItem key={item.text} disablePadding>
+              <ListItemButton
+                onClick={() => handleNavigation(item.path)}
+                sx={{
+                  borderRadius: '0 20px 20px 0',
+                  mr: 2,
+                  mb: 0.5,
                   '&:hover': {
-                    backgroundColor: 'primary.light',
+                    backgroundColor: 'action.hover',
                   },
-                },
-              }}
-              selected={router.pathname === item.path}
-            >
-              <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
-              <ListItemText 
-                primary={item.text} 
-                primaryTypographyProps={{
-                  fontSize: '0.9rem',
-                  fontWeight: router.pathname === item.path ? 600 : 400,
+                  '&.Mui-selected': {
+                    backgroundColor: 'primary.light',
+                    '&:hover': {
+                      backgroundColor: 'primary.light',
+                    },
+                  },
                 }}
-              />
-            </ListItemButton>
-          </ListItem>
+                selected={router.pathname === item.path}
+              >
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
+                <ListItemText 
+                  primary={item.text} 
+                  primaryTypographyProps={{
+                    fontSize: '0.9rem',
+                    fontWeight: router.pathname === item.path ? 600 : 400,
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          )
         ))}
       </List>
       {user?.role === 'PROPERTY_MANAGER' && (

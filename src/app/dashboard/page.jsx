@@ -19,6 +19,7 @@ import {
   IconButton,
   Tooltip,
   LinearProgress,
+  Alert,
 } from '@mui/material';
 import {
   Apartment as ApartmentIcon,
@@ -185,21 +186,39 @@ export default function Dashboard() {
     averageRating: 0,
   });
   const [recentBookings, setRecentBookings] = useState([]);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         // Fetch stats
-        const statsResponse = await fetch('/api/dashboard/stats');
+        const statsResponse = await fetch('/api/dashboard/stats', {
+          credentials: 'include'
+        });
+
+        if (!statsResponse.ok) {
+          const errorData = await statsResponse.json();
+          throw new Error(errorData.error || 'Failed to fetch dashboard statistics');
+        }
+
         const statsData = await statsResponse.json();
         setStats(statsData);
 
         // Fetch recent bookings
-        const bookingsResponse = await fetch('/api/dashboard/recent-bookings');
+        const bookingsResponse = await fetch('/api/dashboard/recent-bookings', {
+          credentials: 'include'
+        });
+
+        if (!bookingsResponse.ok) {
+          const errorData = await bookingsResponse.json();
+          throw new Error(errorData.error || 'Failed to fetch recent bookings');
+        }
+
         const bookingsData = await bookingsResponse.json();
         setRecentBookings(bookingsData);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
+        setError(error.message || 'An error occurred while fetching dashboard data');
       } finally {
         setLoading(false);
       }
@@ -213,14 +232,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <DashboardLayout>
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '60vh',
-          }}
-        >
+        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
           <CircularProgress />
         </Box>
       </DashboardLayout>
@@ -246,6 +258,12 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
+
       <Box sx={{ mb: 4 }}>
         <Typography variant="h4" gutterBottom fontWeight="bold">
           Welcome back, {user?.firstName}!

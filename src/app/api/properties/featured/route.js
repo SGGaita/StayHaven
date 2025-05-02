@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import logger from '@/lib/logger';
 
 export async function GET() {
   try {
-    const featuredProperties = await prisma.property.findMany({
-      take: 6,
-      orderBy: {
-        createdAt: 'desc',
+    // Get active properties with high ratings
+    const properties = await prisma.property.findMany({
+      where: {
+        status: 'ACTIVE',
       },
       include: {
         reviews: {
@@ -15,26 +16,39 @@ export async function GET() {
           },
         },
       },
+      take: 6, // Limit to 6 featured properties
+      orderBy: [
+        {
+          createdAt: 'desc', // Show newest properties first
+        },
+      ],
     });
 
     // Calculate average rating for each property
-    const propertiesWithRating = featuredProperties.map((property) => {
-      const avgRating =
-        property.reviews.length > 0
-          ? property.reviews.reduce((acc, review) => acc + review.rating, 0) /
-            property.reviews.length
-          : null;
+    const featuredProperties = properties.map(property => {
+      const reviews = property.reviews || [];
+      const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+      const avgRating = reviews.length > 0 ? totalRating / reviews.length : 0;
 
-      const { reviews, ...propertyWithoutReviews } = property;
+      const { reviews: _, ...propertyWithoutReviews } = property;
       return {
         ...propertyWithoutReviews,
         avgRating,
+        reviewCount: reviews.length,
       };
     });
 
-    return NextResponse.json(propertiesWithRating);
+    logger.info('properties-featured', 'Featured properties fetched successfully', {
+      count: featuredProperties.length,
+    });
+
+    return NextResponse.json(featuredProperties);
   } catch (error) {
-    console.error('Error fetching featured properties:', error);
+    logger.error('properties-featured', 'Error fetching featured properties', {
+      error: error.message,
+      stack: error.stack,
+    });
+
     return NextResponse.json(
       { error: 'Internal Server Error' },
       { status: 500 }

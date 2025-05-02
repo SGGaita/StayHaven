@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import {
   Box,
@@ -35,9 +36,26 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  DragIndicator as DragIndicatorIcon,
 } from '@mui/icons-material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { Editor } from '@tinymce/tinymce-react';
+
+// Dynamically import react-beautiful-dnd with ssr disabled
+const DragDropContext = dynamic(
+  () => import('react-beautiful-dnd').then(mod => mod.DragDropContext),
+  { ssr: false }
+);
+const Droppable = dynamic(
+  () => import('react-beautiful-dnd').then(mod => mod.Droppable),
+  { ssr: false }
+);
+const Draggable = dynamic(
+  () => import('react-beautiful-dnd').then(mod => mod.Draggable),
+  { ssr: false }
+);
 
 // Tab Panel Component
 function TabPanel({ children, value, index, ...other }) {
@@ -67,6 +85,10 @@ export default function AdminSettings() {
   const [currentTemplate, setCurrentTemplate] = useState(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [templateToDelete, setTemplateToDelete] = useState(null);
+  const [subscriptionPlans, setSubscriptionPlans] = useState([]);
+  const [navigation, setNavigation] = useState(null);
+  const [pages, setPages] = useState([]);
+  const [currentPage, setCurrentPage] = useState(null);
   const [settings, setSettings] = useState({
     general: {
       siteName: '',
@@ -131,6 +153,9 @@ export default function AdminSettings() {
 
   useEffect(() => {
     fetchSettings();
+    fetchSubscriptionPlans();
+    fetchNavigation();
+    fetchPages();
   }, []);
 
   const fetchSettings = async () => {
@@ -153,6 +178,45 @@ export default function AdminSettings() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSubscriptionPlans = async () => {
+    try {
+      const response = await fetch('/api/admin/subscription/plans', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch subscription plans');
+      const data = await response.json();
+      setSubscriptionPlans(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const fetchNavigation = async () => {
+    try {
+      const response = await fetch('/api/admin/cms/navigation', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch navigation');
+      const data = await response.json();
+      setNavigation(data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const fetchPages = async () => {
+    try {
+      const response = await fetch('/api/admin/cms/pages', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to fetch pages');
+      const data = await response.json();
+      setPages(data);
+    } catch (err) {
+      setError(err.message);
     }
   };
 
@@ -326,6 +390,9 @@ export default function AdminSettings() {
           <Tab label="Email" />
           <Tab label="Email Templates" />
           <Tab label="Security" />
+          <Tab label="Subscription Plans" />
+          <Tab label="Navigation" />
+          <Tab label="Pages" />
         </Tabs>
 
         {/* General Settings */}
@@ -718,6 +785,352 @@ export default function AdminSettings() {
             </Grid>
           </Grid>
         </TabPanel>
+
+        {/* Subscription Plans Tab */}
+        <TabPanel value={currentTab} index={6}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Subscription Plans
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {/* Handle add plan */}}
+            >
+              Add Plan
+            </Button>
+          </Box>
+          <Grid container spacing={3}>
+            {subscriptionPlans.map((plan) => (
+              <Grid item xs={12} md={4} key={plan.id}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                    <Typography variant="h6">{plan.name}</Typography>
+                    <Box>
+                      <IconButton size="small" onClick={() => {/* Handle edit */}}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton size="small" onClick={() => {/* Handle delete */}}>
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                  <Typography variant="h4" gutterBottom>
+                    ${plan.price}/{plan.interval}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" paragraph>
+                    {plan.description}
+                  </Typography>
+                  <Divider sx={{ my: 2 }} />
+                  <List dense>
+                    {plan.features.map((feature, index) => (
+                      <ListItem key={index}>
+                        <ListItemText primary={feature} />
+                      </ListItem>
+                    ))}
+                  </List>
+                  <Box sx={{ mt: 2 }}>
+                    <Chip
+                      label={plan.isActive ? 'Active' : 'Inactive'}
+                      color={plan.isActive ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </Box>
+                </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        </TabPanel>
+
+        {/* Navigation Tab */}
+        <TabPanel value={currentTab} index={7}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Navigation
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={() => {/* Handle save navigation */}}
+            >
+              Save Changes
+            </Button>
+          </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                }}
+              >
+                <Typography variant="subtitle1" gutterBottom>
+                  Logo
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    mb: 2,
+                  }}
+                >
+                  {navigation?.logo ? (
+                    <Box
+                      component="img"
+                      src={navigation.logo}
+                      alt="Logo"
+                      sx={{ width: 100, height: 'auto' }}
+                    />
+                  ) : (
+                    <Box
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px dashed',
+                        borderColor: 'divider',
+                        borderRadius: 1,
+                      }}
+                    >
+                      <ImageIcon sx={{ fontSize: 40, color: 'text.secondary' }} />
+                    </Box>
+                  )}
+                  <Button
+                    variant="outlined"
+                    startIcon={<ImageIcon />}
+                    onClick={() => {/* Handle logo upload */}}
+                  >
+                    Upload Logo
+                  </Button>
+                </Box>
+                <Typography variant="subtitle1" gutterBottom>
+                  Menu Items
+                </Typography>
+                <DragDropContext onDragEnd={() => {/* Handle drag end */}}>
+                  <Droppable droppableId="menu-items">
+                    {(provided) => (
+                      <List
+                        {...provided.droppableProps}
+                        ref={provided.innerRef}
+                        sx={{ bgcolor: 'background.paper' }}
+                      >
+                        {navigation?.items?.map((item, index) => (
+                          <Draggable
+                            key={item.id}
+                            draggableId={item.id}
+                            index={index}
+                          >
+                            {(provided) => (
+                              <ListItem
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                secondaryAction={
+                                  <Box>
+                                    <IconButton
+                                      {...provided.dragHandleProps}
+                                      size="small"
+                                    >
+                                      <DragIndicatorIcon />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {/* Handle edit */}}
+                                    >
+                                      <EditIcon />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {/* Handle delete */}}
+                                    >
+                                      <DeleteIcon />
+                                    </IconButton>
+                                  </Box>
+                                }
+                              >
+                                <ListItemText
+                                  primary={item.label}
+                                  secondary={item.url}
+                                />
+                              </ListItem>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </List>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  startIcon={<AddIcon />}
+                  onClick={() => {/* Handle add menu item */}}
+                  sx={{ mt: 2 }}
+                >
+                  Add Menu Item
+                </Button>
+              </Paper>
+            </Grid>
+          </Grid>
+        </TabPanel>
+
+        {/* Pages Tab */}
+        <TabPanel value={currentTab} index={8}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+            <Typography variant="h6" fontWeight="bold">
+              Pages
+            </Typography>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => {/* Handle add page */}}
+            >
+              Add Page
+            </Button>
+          </Box>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={4}>
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 2,
+                }}
+              >
+                <List>
+                  {pages.map((page) => (
+                    <ListItem
+                      key={page.id}
+                      button
+                      selected={currentPage?.id === page.id}
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      <ListItemText
+                        primary={page.title}
+                        secondary={page.slug}
+                      />
+                      <ListItemSecondaryAction>
+                        <IconButton
+                          size="small"
+                          onClick={() => {/* Handle delete */}}
+                        >
+                          <DeleteIcon />
+                        </IconButton>
+                      </ListItemSecondaryAction>
+                    </ListItem>
+                  ))}
+                </List>
+              </Paper>
+            </Grid>
+            {currentPage && (
+              <Grid item xs={12} md={8}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                  }}
+                >
+                  <Box sx={{ mb: 3 }}>
+                    <TextField
+                      fullWidth
+                      label="Page Title"
+                      value={currentPage.title}
+                      onChange={(e) => {/* Handle title change */}}
+                    />
+                  </Box>
+                  <Typography variant="subtitle1" gutterBottom>
+                    Sections
+                  </Typography>
+                  <DragDropContext onDragEnd={() => {/* Handle drag end */}}>
+                    <Droppable droppableId="page-sections">
+                      {(provided) => (
+                        <List
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                        >
+                          {currentPage.sections?.map((section, index) => (
+                            <Draggable
+                              key={section.id}
+                              draggableId={section.id}
+                              index={index}
+                            >
+                              {(provided) => (
+                                <ListItem
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <ListItemText
+                                    primary={section.name}
+                                    secondary={`Order: ${section.order}`}
+                                  />
+                                  <ListItemSecondaryAction>
+                                    <IconButton
+                                      {...provided.dragHandleProps}
+                                      size="small"
+                                    >
+                                      <DragIndicatorIcon />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {/* Handle edit */}}
+                                    >
+                                      <EditIcon />
+                                    </IconButton>
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => {/* Handle delete */}}
+                                    >
+                                      <DeleteIcon />
+                                    </IconButton>
+                                  </ListItemSecondaryAction>
+                                </ListItem>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </List>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    startIcon={<AddIcon />}
+                    onClick={() => {/* Handle add section */}}
+                    sx={{ mt: 2 }}
+                  >
+                    Add Section
+                  </Button>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        </TabPanel>
       </Paper>
 
       {/* Email Template Dialog */}
@@ -753,7 +1166,7 @@ export default function AdminSettings() {
                 Email Content
               </Typography>
               <Editor
-                apiKey="d7t6xsh75py7rnr5bf5u70q1t1ko0lq6ikunojjxi70313tl"
+                apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                 value={currentTemplate?.content || ''}
                 init={{
                   height: 400,

@@ -36,6 +36,7 @@ const footerSections = [
     links: [
       { name: 'Our Story', href: '/about' },
       { name: 'Investors', href: '/investors' },
+      { name: 'API Documentation', href: '/api-docs' },
       { name: 'Terms of Service', href: '/terms' },
       { name: 'Privacy Policy', href: '/privacy' },
     ],

@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/logger';
+import { uploadFile } from '@/lib/uploadFile';
+import { ensureUploadDir } from '@/lib/ensureUploadDir';
 
 export async function GET(request) {
   try {
-    // Get the user's token
-    const token = await getToken({ req: request });
-    if (!token) {
+    // Get the user's session
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    logger.info('properties', 'Fetching properties', { userId: token.id, role: token.role });
+    logger.info('properties', 'Fetching properties', { userId: session.user.id, role: session.user.role });
 
     // Define the query based on user role
     let query = {
@@ -25,11 +28,11 @@ export async function GET(request) {
     };
 
     // Add role-specific filters
-    if (token.role === 'PROPERTY_MANAGER') {
+    if (session.user.role === 'PROPERTY_MANAGER') {
       query.where = {
-        managerId: token.id,
+        managerId: session.user.id,
       };
-    } else if (token.role === 'SUPER_ADMIN') {
+    } else if (session.user.role === 'SUPER_ADMIN') {
       // Super admin can see all properties
     } else {
       // Customers should only see published/active properties
@@ -56,8 +59,8 @@ export async function GET(request) {
     });
 
     logger.info('properties', 'Properties fetched successfully', {
-      userId: token.id,
-      role: token.role,
+      userId: session.user.id,
+      role: session.user.role,
       count: propertiesWithRating.length,
     });
 
@@ -77,8 +80,9 @@ export async function GET(request) {
 
 export async function DELETE(request) {
   try {
-    const token = await getToken({ req: request });
-    if (!token || (token.role !== 'PROPERTY_MANAGER' && token.role !== 'SUPER_ADMIN')) {
+    // Get the user's session
+    const session = await getServerSession(authOptions);
+    if (!session || (session.user.role !== 'PROPERTY_MANAGER' && session.user.role !== 'SUPER_ADMIN')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -86,13 +90,13 @@ export async function DELETE(request) {
     const propertyId = url.pathname.split('/').pop();
 
     // Verify property ownership for property managers
-    if (token.role === 'PROPERTY_MANAGER') {
+    if (session.user.role === 'PROPERTY_MANAGER') {
       const property = await prisma.property.findUnique({
         where: { id: propertyId },
         select: { managerId: true },
       });
 
-      if (!property || property.managerId !== token.id) {
+      if (!property || property.managerId !== session.user.id) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
       }
     }
@@ -102,13 +106,87 @@ export async function DELETE(request) {
     });
 
     logger.info('properties', 'Property deleted successfully', {
-      userId: token.id,
+      userId: session.user.id,
       propertyId,
     });
 
     return NextResponse.json({ message: 'Property deleted successfully' });
   } catch (error) {
     logger.error('properties', 'Error deleting property', {
+      error: error.message,
+      stack: error.stack,
+    });
+
+    return NextResponse.json(
+      { error: 'Internal Server Error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request) {
+  try {
+    // Get the user's session
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'PROPERTY_MANAGER') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Ensure upload directory exists
+    await ensureUploadDir();
+
+    // Parse form data
+    const formData = await request.formData();
+    
+    // Get basic property data
+    const name = formData.get('name');
+    const description = formData.get('description');
+    const propertyType = formData.get('propertyType');
+    const price = parseFloat(formData.get('price'));
+    const amenities = JSON.parse(formData.get('amenities'));
+    const location = JSON.parse(formData.get('location'));
+    const coverPhotoIndex = parseInt(formData.get('coverPhotoIndex'));
+
+    // Validate required fields
+    if (!name || !description || !propertyType || !price || !location) {
+      return NextResponse.json(
+        { error: 'Missing required fields' },
+        { status: 400 }
+      );
+    }
+
+    // Upload photos
+    const photos = formData.getAll('photos');
+    const photoUrls = await Promise.all(
+      photos.map(photo => uploadFile(photo))
+    );
+
+    // Create new property
+    const property = await prisma.property.create({
+      data: {
+        name,
+        description,
+        propertyType,
+        price,
+        amenities,
+        location: location.address,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        photos: photoUrls,
+        coverPhoto: photoUrls[coverPhotoIndex],
+        status: 'PENDING', // New properties need admin approval
+        managerId: session.user.id,
+      },
+    });
+
+    logger.info('properties', 'Property created successfully', {
+      userId: session.user.id,
+      propertyId: property.id,
+    });
+
+    return NextResponse.json(property);
+  } catch (error) {
+    logger.error('properties', 'Error creating property', {
       error: error.message,
       stack: error.stack,
     });

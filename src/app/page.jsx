@@ -9,6 +9,7 @@ import { Search, LocationOn, DateRange, Group } from '@mui/icons-material';
 import { setProperties, setLoading } from '@/redux/features/propertySlice';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import PropertyCard from '@/components/property/PropertyCard';
 
 export default function Home() {
   const dispatch = useDispatch();
@@ -30,220 +31,152 @@ export default function Home() {
   }, [dispatch]);
 
   return (
-    <Box sx={{ 
-      minHeight: '100vh',
-      display: 'flex',
-      flexDirection: 'column'
-    }}>
+    <main>
       <Navbar />
       
       {/* Hero Section */}
-      <Box sx={{ position: 'relative', height: '80vh', minHeight: '600px' }}>
+      <Box
+        sx={{
+          position: 'relative',
+          height: '80vh',
+          display: 'flex',
+          alignItems: 'center',
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
+        }}
+      >
         <Image
           src="/hero-image.jpg"
-          alt="Beautiful vacation rental"
+          alt="Luxury vacation rental"
           fill
-          style={{ objectFit: 'cover' }}
           priority
-        />
-        <Box
-          sx={{
-            position: 'absolute',
-            inset: 0,
-            background: 'linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+          style={{
+            objectFit: 'cover',
+            opacity: 0.7,
           }}
-        >
-          <Container maxWidth="md">
-            <Box sx={{ textAlign: 'center', color: 'white' }}>
-              <Typography variant="h1" sx={{ 
-                mb: 3, 
-                fontWeight: 800,
-                fontSize: { xs: '2.5rem', md: '4rem' },
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-              }}>
-                Find Your Dream Getaway
-              </Typography>
-              <Typography variant="h5" sx={{ 
-                mb: 6,
-                fontWeight: 400,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
-              }}>
-                Discover unique stays and experiences worldwide
-              </Typography>
+        />
+        <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
+          <Box sx={{ maxWidth: 600 }}>
+            <Typography
+              variant="h1"
+              sx={{
+                fontSize: { xs: '2.5rem', md: '3.5rem' },
+                fontWeight: 700,
+                mb: 2,
+                color: 'common.white',
+              }}
+            >
+              Find Your Perfect Vacation Home
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                mb: 4,
+                color: 'common.white',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+              }}
+            >
+              Discover unique stays and experiences around the world
+            </Typography>
 
-              {/* Search Bar */}
-              <Paper
-                elevation={3}
+            {/* Search Bar */}
+            <Paper
+              elevation={3}
+              sx={{
+                p: 2,
+                borderRadius: 2,
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                gap: 2,
+              }}
+            >
+              <TextField
+                fullWidth
+                placeholder="Where are you going?"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LocationOn />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                placeholder="Check-in - Check-out"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <DateRange />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <TextField
+                fullWidth
+                placeholder="Guests"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Group />
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                variant="contained"
+                size="large"
+                startIcon={<Search />}
                 sx={{
-                  p: 2,
-                  maxWidth: '800px',
-                  margin: '0 auto',
-                  background: 'rgba(255,255,255,0.95)',
-                  borderRadius: '16px',
+                  minWidth: { xs: '100%', md: '120px' },
+                  height: '56px',
                 }}
               >
-                <Grid container spacing={2} alignItems="center">
-                  <Grid item xs={12} sm={4}>
-                    <TextField
-                      fullWidth
-                      placeholder="Where to?"
-                      variant="outlined"
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <LocationOn color="primary" />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <TextField
-                      fullWidth
-                      placeholder="Check in - Check out"
-                      variant="outlined"
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <DateRange color="primary" />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={3}>
-                    <TextField
-                      fullWidth
-                      placeholder="Guests"
-                      variant="outlined"
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Group color="primary" />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={2}>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      startIcon={<Search />}
-                      sx={{ 
-                        height: '56px',
-                        borderRadius: '8px',
-                        backgroundColor: 'primary.main',
-                        '&:hover': {
-                          backgroundColor: 'primary.dark',
-                        }
-                      }}
-                    >
-                      Search
-                    </Button>
-                  </Grid>
-                </Grid>
-              </Paper>
-            </Box>
-          </Container>
-        </Box>
+                Search
+              </Button>
+            </Paper>
+          </Box>
+        </Container>
       </Box>
 
-      {/* Featured Properties */}
-      <Container sx={{ py: 8 }}>
-        <Box sx={{ mb: 6 }}>
-          <Typography variant="h4" component="h2" sx={{ 
-            mb: 2,
-            fontWeight: 700,
-          }}>
-            Featured Stays
-          </Typography>
-          <Typography variant="subtitle1" color="text.secondary">
-            Handpicked properties for your perfect vacation
-          </Typography>
-        </Box>
+      {/* Featured Properties Section */}
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Typography variant="h4" gutterBottom fontWeight="bold">
+          Featured Properties
+        </Typography>
+        <Typography variant="body1" color="text.secondary" paragraph>
+          Handpicked properties for your next getaway
+        </Typography>
 
         {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
             <CircularProgress />
           </Box>
-        ) : Array.isArray(properties) && properties.length > 0 ? (
+        ) : (
           <Grid container spacing={3}>
-            {properties.slice(0, 6).map((property) => (
+            {properties.map((property) => (
               <Grid item key={property.id} xs={12} sm={6} md={4}>
-                <Paper
-                  component={Link}
-                  href={`/properties/${property.id}`}
-                  elevation={0}
-                  sx={{
-                    display: 'block',
-                    textDecoration: 'none',
-                    color: 'inherit',
-                    borderRadius: '16px',
-                    overflow: 'hidden',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                      '& .property-image': {
-                        transform: 'scale(1.05)',
-                      },
-                    },
-                  }}
-                >
-                  <Box sx={{ position: 'relative', height: 260, overflow: 'hidden' }}>
-                    <Image
-                      src={property.photos?.[0] || '/placeholder.jpg'}
-                      alt={property.name}
-                      fill
-                      className="property-image"
-                      style={{ 
-                        objectFit: 'cover',
-                        transition: 'transform 0.3s ease-in-out'
-                      }}
-                    />
-                  </Box>
-                  <Box sx={{ p: 2.5 }}>
-                    <Typography variant="h6" sx={{ 
-                      mb: 1,
-                      fontWeight: 600,
-                      fontSize: '1.1rem'
-                    }}>
-                      {property.name}
-                    </Typography>
-                    <Typography color="text.secondary" sx={{ mb: 1.5 }}>
-                      {property.location}
-                    </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                        ${property.price} <Box component="span" color="text.secondary" sx={{ fontWeight: 400 }}>/ night</Box>
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        sx={{ 
-                          borderRadius: '8px',
-                          textTransform: 'none',
-                          minWidth: '100px'
-                        }}
-                      >
-                        View Details
-                      </Button>
-                    </Box>
-                  </Box>
-                </Paper>
+                <PropertyCard property={property} />
               </Grid>
             ))}
           </Grid>
-        ) : (
-          <Box sx={{ textAlign: 'center', py: 4 }}>
-            <Typography color="text.secondary">No properties available at the moment.</Typography>
-          </Box>
         )}
+
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+          <Button
+            component={Link}
+            href="/properties"
+            variant="outlined"
+            size="large"
+            sx={{
+              borderRadius: 2,
+              textTransform: 'none',
+              px: 4,
+            }}
+          >
+            View All Properties
+          </Button>
+        </Box>
       </Container>
 
       {/* Categories Section */}
@@ -366,6 +299,6 @@ export default function Home() {
       </Container>
 
       <Footer />
-    </Box>
+    </main>
   );
 } 
