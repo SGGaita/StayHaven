@@ -1,0 +1,30 @@
+2025-04-30 22:59:12,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 22:59:13,000 - WARNING - login - Login failed: Invalid credentials - Email: steveggaita@gmail.com
+2025-04-30 22:59:54,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 22:59:55,000 - INFO - login - Login successful for user - Email: steveggaita@gmail.com
+2025-04-30 23:02:31,000 - INFO - register - Received registration request - Email: steveggaita@gmail.com
+2025-04-30 23:02:31,000 - WARNING - register - User already exists - Email: steveggaita@gmail.com
+2025-04-30 23:04:26,000 - INFO - register - Received registration request - Email: admin@example.com
+2025-04-30 23:04:27,000 - INFO - register - User registered successfully - Email: admin@example.com
+2025-04-30 23:04:28,000 - INFO - login - Login attempt for email - Email: admin@example.com
+2025-04-30 23:04:28,000 - INFO - login - Login successful for user - Email: admin@example.com
+2025-04-30 23:10:31,000 - INFO - forgot-password - Password reset request received - Email: steveggaita@gmail.com
+2025-04-30 23:10:32,000 - ERROR - forgot-password - Error processing password reset request - Cannot read properties of undefined (reading 'upsert'), TypeError: Cannot read properties of undefined (reading 'upsert')
+    at POST (webpack-internal:///(rsc)/./src/app/api/auth/forgot-password/route.js:48:81)
+    at async eval (webpack-internal:///(rsc)/./node_modules/next/dist/server/future/route-modules/app-route/module.js:254:37)
+2025-04-30 23:10:47,000 - INFO - forgot-password - Password reset request received - Email: steveggaita@gmail.com
+2025-04-30 23:10:47,000 - ERROR - forgot-password - Error processing password reset request - Cannot read properties of undefined (reading 'upsert'), TypeError: Cannot read properties of undefined (reading 'upsert')
+    at POST (webpack-internal:///(rsc)/./src/app/api/auth/forgot-password/route.js:48:81)
+    at async eval (webpack-internal:///(rsc)/./node_modules/next/dist/server/future/route-modules/app-route/module.js:254:37)
+2025-04-30 23:15:03,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 23:15:04,000 - WARNING - login - Login failed: Invalid credentials - Email: steveggaita@gmail.com
+2025-04-30 23:15:12,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 23:15:13,000 - INFO - login - Login successful for user - Email: steveggaita@gmail.com
+2025-04-30 23:26:20,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 23:26:20,000 - WARNING - login - Login failed: Invalid credentials - Email: steveggaita@gmail.com
+2025-04-30 23:26:26,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 23:26:27,000 - INFO - login - Login successful for user - Email: steveggaita@gmail.com
+2025-04-30 23:28:01,000 - INFO - login - Login attempt for email - Email: steveggaita@gmail.com
+2025-04-30 23:28:02,000 - INFO - login - Login successful for user - Email: steveggaita@gmail.com
+2025-04-30 23:35:36,000 - INFO - login - Login attempt for email - Email: egaikia@gmail.com
+2025-04-30 23:35:37,000 - INFO - login - Login successful for user - Email: egaikia@gmail.com

@@ -1,0 +1,268 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(uuid())
+  firstName   String
+  lastName    String
+  email       String    @unique
+  password    String
+  role        Role      @default(CUSTOMER)
+  profileInfo Json?
+  properties  Property[]
+  bookings    Booking[]
+  reviews     Review[]
+  messagesSent Message[] @relation("sender")
+  messagesReceived Message[] @relation("receiver")
+  verificationStatus String @default("PENDING")
+  passwordReset PasswordReset?
+  subscription Subscription?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  createdTemplates EmailTemplate[] @relation("templateCreator")
+  updatedTemplates EmailTemplate[] @relation("templateUpdater")
+}
+
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id])
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+enum Role {
+  SUPER_ADMIN
+  PROPERTY_MANAGER
+  CUSTOMER
+}
+
+enum PropertyStatus {
+  ACTIVE
+  PENDING
+  MAINTENANCE
+  ARCHIVED
+}
+
+model Property {
+  id           String    @id @default(uuid())
+  name         String
+  description  String
+  location     String
+  propertyType String
+  managerId    String
+  manager      User      @relation(fields: [managerId], references: [id])
+  status       PropertyStatus @default(ACTIVE)
+  amenities    Json?
+  photos       String[]
+  lat          Float?
+  lng          Float?
+  price        Float
+  cleaningFee  Float?
+  securityDeposit Float?
+  checkInTime  String?
+  checkOutTime String?
+  houseRules   Json?
+  customRules  Json?
+  bedrooms     Int      @default(1)
+  beds         Int      @default(1)
+  bathrooms    Int      @default(1)
+  maxGuests    Int      @default(1)
+  minimumStay  Int      @default(1)
+  maximumStay  Int      @default(30)
+  instantBooking Boolean @default(false)
+  bookings     Booking[]
+  reviews      Review[]
+  pricingRules PricingRule[]
+  cancellationPolicy CancellationPolicy?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Booking {
+  id          String    @id @default(uuid())
+  bookingRef  String    @unique
+  propertyId  String
+  customerId  String
+  startDate   DateTime
+  endDate     DateTime
+  status      String
+  price       Float
+  guests      Int      @default(1)
+  subtotal    Float
+  cleaningFee Float    @default(0)
+  serviceFee  Float    @default(0)
+  securityDeposit Float @default(0)
+  property    Property  @relation(fields: [propertyId], references: [id])
+  customer    User      @relation(fields: [customerId], references: [id])
+  payments    Payment[]
+  review      Review?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Payment {
+  id            String    @id @default(uuid())
+  bookingId     String
+  amount        Float
+  method        String
+  status        String
+  transactionId String?
+  booking       Booking   @relation(fields: [bookingId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Review {
+  id          String    @id @default(uuid())
+  bookingId   String    @unique
+  customerId  String
+  propertyId  String
+  rating      Int
+  comment     String
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+  customer    User      @relation(fields: [customerId], references: [id])
+  property    Property  @relation(fields: [propertyId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  senderId    String
+  receiverId  String
+  messageText String
+  sender      User      @relation("sender", fields: [senderId], references: [id])
+  receiver    User      @relation("receiver", fields: [receiverId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model PricingRule {
+  id              String    @id @default(uuid())
+  propertyId      String
+  startDate       DateTime
+  endDate         DateTime
+  priceAdjustment Float
+  type            String
+  property        Property  @relation(fields: [propertyId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model CancellationPolicy {
+  id                String    @id @default(uuid())
+  propertyId        String    @unique
+  policyName        String
+  description       String
+  cancellationWindow Int
+  refundPercentage  Int
+  property          Property  @relation(fields: [propertyId], references: [id])
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model Settings {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  value         Json
+  description   String?
+  category      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id          String   @id @default(uuid())
+  name        String
+  subject     String
+  content     String   @db.Text
+  variables   String[] @default([])
+  createdBy   String
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creator     User     @relation("templateCreator", fields: [createdBy], references: [id])
+  updater     User?    @relation("templateUpdater", fields: [updatedBy], references: [id])
+}
+
+model Subscription {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id])
+  planId          String
+  plan            Plan     @relation(fields: [planId], references: [id])
+  status          SubscriptionStatus @default(ACTIVE)
+  startDate       DateTime
+  endDate         DateTime
+  autoRenew       Boolean  @default(true)
+  paymentMethod   Json?
+  lastPayment     DateTime?
+  nextPayment     DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Plan {
+  id              String   @id @default(uuid())
+  name            String
+  description     String
+  price           Float
+  interval        String   // monthly, yearly
+  features        Json
+  maxProperties   Int
+  isActive        Boolean  @default(true)
+  subscriptions   Subscription[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  SUSPENDED
+  TRIAL
+}
+
+model Navigation {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  items     Json     // Array of menu items with links
+  logo      String?  // URL to logo image
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Page {
+  id        String    @id @default(uuid())
+  slug      String    @unique
+  title     String
+  sections  Section[]
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Section {
+  id        String   @id @default(uuid())
+  pageId    String
+  page      Page     @relation(fields: [pageId], references: [id])
+  name      String   // e.g., "hero", "features", "testimonials"
+  content   Json     // Flexible content structure
+  order     Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+} 
