@@ -1,29 +1,87 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 import prisma from '@/lib/prisma';
-import logger from '@/lib/server-logger';
+import serverLogger from '@/lib/server-logger';
+import { cookies } from 'next/headers';
 
 export async function GET(request) {
   try {
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
 
-    if (!token) {
-      logger.authError('admin-stats', 'No authentication token found');
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (!sessionCookie) {
+      serverLogger.apiWarn('admin-stats', 'No session cookie found');
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Unauthorized access',
+          details: 'Please sign in to access this resource'
+        }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    if (token.role !== 'SUPER_ADMIN') {
-      logger.authError('admin-stats', 'Non-admin access attempt', { 
-        userId: token.id,
-        role: token.role 
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      serverLogger.apiError('admin-stats', 'Failed to parse session cookie', { error });
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Invalid session',
+          details: 'Please sign in again'
+        }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    if (!session?.user?.id || !session?.user?.role || !session.isAuthenticated) {
+      serverLogger.apiWarn('admin-stats', 'Invalid session data', { 
+        hasUser: !!session?.user,
+        hasId: !!session?.user?.id,
+        hasRole: !!session?.user?.role,
+        isAuthenticated: !!session?.isAuthenticated
       });
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Unauthorized access',
+          details: 'Invalid session data'
+        }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     }
 
-    logger.adminDebug('stats-fetch', 'Fetching admin stats', { userId: token.id });
+    const userId = session.user.id;
+    const userRole = session.user.role;
+
+    // Check if user is admin
+    if (userRole !== 'SUPER_ADMIN') {
+      serverLogger.authError('admin-stats', 'Non-admin access attempt', { 
+        userId,
+        role: userRole 
+      });
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Unauthorized access',
+          details: 'Admin access required'
+        }),
+        { 
+          status: 401,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+
+    serverLogger.adminInfo('stats-fetch', 'Fetching admin stats', { userId });
 
     try {
       // Get total users
@@ -79,30 +137,49 @@ export async function GET(request) {
         systemHealth,
       };
 
-      logger.adminInfo('stats-fetch', 'Admin stats fetched successfully', {
-        userId: token.id,
+      serverLogger.adminInfo('stats-fetch', 'Admin stats fetched successfully', {
+        userId,
         ...stats
       });
 
-      return NextResponse.json(stats);
+      return new NextResponse(
+        JSON.stringify(stats),
+        { 
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
     } catch (dbError) {
-      logger.apiError('stats-fetch', 'Database error while fetching admin stats', {
+      serverLogger.apiError('stats-fetch', 'Database error while fetching admin stats', {
         error: dbError.message,
         stack: dbError.stack,
+        userId
       });
-      return NextResponse.json(
-        { error: 'Database Error' },
-        { status: 500 }
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Database error',
+          details: dbError.message
+        }),
+        { 
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        }
       );
     }
   } catch (error) {
-    logger.apiError('stats-fetch', 'Error fetching admin stats', {
+    serverLogger.apiError('stats-fetch', 'Error fetching admin stats', {
       error: error.message,
       stack: error.stack,
     });
-    return NextResponse.json(
-      { error: 'Internal Server Error' },
-      { status: 500 }
+    return new NextResponse(
+      JSON.stringify({ 
+        error: 'Internal Server Error',
+        details: error.message
+      }),
+      { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
     );
   }
 } 

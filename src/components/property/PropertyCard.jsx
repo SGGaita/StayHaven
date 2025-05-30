@@ -30,6 +30,7 @@ import {
   Twitter,
   LinkedIn,
   WhatsApp,
+  BrokenImage,
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
 import Link from 'next/link';

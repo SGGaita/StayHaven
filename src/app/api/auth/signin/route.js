@@ -60,14 +60,33 @@ export async function POST(request) {
     // Remove sensitive data before sending response
     const { password: _, ...userWithoutPassword } = user;
 
+    // Create session data
+    const sessionData = {
+      user: userWithoutPassword,
+      isAuthenticated: true,
+      timestamp: new Date().toISOString()
+    };
+
     logger.authInfo('signin', 'User signed in successfully', {
       userId: user.id,
       email: user.email,
     });
 
-    return NextResponse.json({
+    // Create response with session cookie
+    const response = NextResponse.json({
       user: userWithoutPassword,
     });
+
+    // Set session cookie
+    response.cookies.set('auth', JSON.stringify(sessionData), {
+      httpOnly: false, // Allow client-side access for Redux
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
     logger.authError('signin', 'Error during sign in', {
       error: error.message,

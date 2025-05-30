@@ -21,8 +21,10 @@ model User {
   properties  Property[]
   bookings    Booking[]
   reviews     Review[]
+  favorites   Favorite[]
   messagesSent Message[] @relation("sender")
   messagesReceived Message[] @relation("receiver")
+  notifications Notification[]
   verificationStatus String @default("PENDING")
   passwordReset PasswordReset?
   subscription Subscription?
@@ -83,6 +85,7 @@ model Property {
   instantBooking Boolean @default(false)
   bookings     Booking[]
   reviews      Review[]
+  favorites    Favorite[]
   pricingRules PricingRule[]
   cancellationPolicy CancellationPolicy?
   createdAt    DateTime  @default(now())
@@ -263,6 +266,30 @@ model Section {
   content   Json     // Flexible content structure
   order     Int      @default(0)
   isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id])
+  createdAt  DateTime @default(now())
+  
+  @@unique([userId, propertyId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String   // e.g., "BOOKING_CONFIRMED", "PAYMENT_RECEIVED", etc.
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  data      Json?    // Additional data related to the notification
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 } 

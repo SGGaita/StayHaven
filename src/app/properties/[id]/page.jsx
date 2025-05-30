@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Container, Grid, Typography, Box, Chip, Button, Divider, Paper, IconButton, Tooltip, Stack } from '@mui/material';
+import { Container, Grid, Typography, Box, Chip, Button, Divider, Paper, IconButton, Tooltip, Stack, CircularProgress } from '@mui/material';
 import Image from 'next/image';
 import {
   LocationOn,
@@ -21,9 +21,13 @@ import {
   WhatsApp as WhatsAppIcon,
   ContentCopy as CopyIcon,
   Share as ShareIcon,
+  Favorite as FavoriteIcon,
+  FavoriteBorder as FavoriteBorderIcon,
+  RateReview as ReviewIcon,
 } from '@mui/icons-material';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/features/authSlice';
+import { useRouter } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PropertyAmenities from '@/components/property/PropertyAmenities';
@@ -97,11 +101,14 @@ const RippleMarker = ({ position }) => {
 
 export default function PropertyPage({ params }) {
   const user = useSelector(selectCurrentUser);
+  const router = useRouter();
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showShareTooltip, setShowShareTooltip] = useState(false);
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoritingProperty, setFavoritingProperty] = useState(false);
 
   useEffect(() => {
     const fetchProperty = async () => {
@@ -133,6 +140,76 @@ export default function PropertyPage({ params }) {
 
     fetchProperty();
   }, [params.id, user]);
+
+  // Check if property is favorited
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!user || !property) return;
+      
+      try {
+        const response = await fetch('/api/dashboard/favorites', {
+          credentials: 'include',
+        });
+        
+        if (response.ok) {
+          const favoritesData = await response.json();
+          const favoriteIds = new Set(
+            (Array.isArray(favoritesData) ? favoritesData : [])
+              .map(fav => fav.property?.id)
+              .filter(Boolean)
+          );
+          setIsFavorited(favoriteIds.has(property.id));
+        }
+      } catch (err) {
+        console.error('Error fetching favorite status:', err);
+      }
+    };
+
+    checkFavoriteStatus();
+  }, [user, property]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      router.push('/auth/signin');
+      return;
+    }
+
+    if (!property) return;
+
+    try {
+      setFavoritingProperty(true);
+
+      if (isFavorited) {
+        // Remove from favorites
+        const response = await fetch(`/api/dashboard/favorites?propertyId=${property.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          setIsFavorited(false);
+        }
+      } else {
+        // Add to favorites
+        const response = await fetch('/api/dashboard/favorites', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ propertyId: property.id }),
+        });
+
+        if (response.ok) {
+          setIsFavorited(true);
+        }
+      }
+    } catch (err) {
+      console.error('Error toggling favorite:', err);
+    } finally {
+      setFavoritingProperty(false);
+    }
+  };
 
   const handleShare = (platform) => {
     const url = window.location.href;
@@ -239,7 +316,7 @@ export default function PropertyPage({ params }) {
                     </Box>
                   </Box>
                   <Box sx={{ textAlign: 'right' }}>
-                    <Typography variant="h4" color="primary" sx={{ fontWeight: 700 }}>
+                    <Typography variant="h5" color="primary" sx={{ fontWeight: 700 }}>
                       ${property.price}
                     </Typography>
                     <Typography color="text.secondary">per night</Typography>
@@ -303,94 +380,157 @@ export default function PropertyPage({ params }) {
                     </Box>
                   </Box>
 
-                  {/* Share Section */}
-                  <Stack spacing={1} alignItems="flex-end">
+                  {/* Action Buttons Section */}
+                  <Stack direction="row" spacing={1} alignItems="flex-start">
+                    {/* Favorite Button */}
+                    <Tooltip title={isFavorited ? "Remove from favorites" : "Add to favorites"}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={
+                          favoritingProperty ? (
+                            <CircularProgress size={16} />
+                          ) : isFavorited ? (
+                            <FavoriteIcon />
+                          ) : (
+                            <FavoriteBorderIcon />
+                          )
+                        }
+                        size="small"
+                        onClick={handleToggleFavorite}
+                        disabled={favoritingProperty}
+                        sx={{
+                          borderRadius: 2,
+                          textTransform: 'none',
+                          minWidth: 120,
+                          color: isFavorited ? '#FF385C' : 'primary.main',
+                          borderColor: isFavorited ? '#FF385C' : 'primary.main',
+                          '&:hover': {
+                            borderColor: '#FF385C',
+                            backgroundColor: 'rgba(255, 56, 92, 0.04)',
+                          },
+                        }}
+                      >
+                        {isFavorited ? 'Saved' : 'Save'}
+                      </Button>
+                    </Tooltip>
+
+                    {/* Review Button */}
                     <Button
                       variant="outlined"
                       color="primary"
-                      startIcon={<ShareIcon />}
+                      startIcon={<ReviewIcon />}
                       size="small"
-                      onClick={() => setShowShareTooltip(!showShareTooltip)}
+                      onClick={() => {
+                        // Scroll to reviews section or navigate to reviews
+                        const reviewsSection = document.getElementById('reviews-section');
+                        if (reviewsSection) {
+                          reviewsSection.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                          router.push(`/properties/${params.id}/reviews`);
+                        }
+                      }}
                       sx={{
                         borderRadius: 2,
                         textTransform: 'none',
                         minWidth: 120,
                       }}
                     >
-                      Share
+                      Reviews
                     </Button>
-                    
-                    {showShareTooltip && (
-                      <Paper
-                        elevation={3}
+
+                    {/* Share Button */}
+                    <Box sx={{ position: 'relative' }}>
+                      <Button
+                        variant="outlined"
+                        color="primary"
+                        startIcon={<ShareIcon />}
+                        size="small"
+                        onClick={() => setShowShareTooltip(!showShareTooltip)}
                         sx={{
-                          p: 2,
                           borderRadius: 2,
-                          position: 'absolute',
-                          mt: 5,
-                          zIndex: 1000,
-                          bgcolor: 'background.paper',
-                          border: '1px solid',
-                          borderColor: 'divider',
+                          textTransform: 'none',
+                          minWidth: 120,
                         }}
                       >
-                        <Stack spacing={1}>
-                          <Button
-                            fullWidth
-                            startIcon={<FacebookIcon />}
-                            onClick={() => handleShare('facebook')}
-                            sx={{
-                              color: 'primary.main',
-                              justifyContent: 'flex-start',
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: 'primary.lighter' },
-                            }}
-                          >
-                            Share on Facebook
-                          </Button>
-                          <Button
-                            fullWidth
-                            startIcon={<TwitterIcon />}
-                            onClick={() => handleShare('twitter')}
-                            sx={{
-                              color: 'primary.main',
-                              justifyContent: 'flex-start',
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: 'primary.lighter' },
-                            }}
-                          >
-                            Share on Twitter
-                          </Button>
-                          <Button
-                            fullWidth
-                            startIcon={<WhatsAppIcon />}
-                            onClick={() => handleShare('whatsapp')}
-                            sx={{
-                              color: 'primary.main',
-                              justifyContent: 'flex-start',
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: 'primary.lighter' },
-                            }}
-                          >
-                            Share on WhatsApp
-                          </Button>
-                          <Divider />
-                          <Button
-                            fullWidth
-                            startIcon={<CopyIcon />}
-                            onClick={() => handleShare('copy')}
-                            sx={{
-                              color: copySuccess ? 'success.main' : 'primary.main',
-                              justifyContent: 'flex-start',
-                              textTransform: 'none',
-                              '&:hover': { bgcolor: 'primary.lighter' },
-                            }}
-                          >
-                            {copySuccess ? 'Link Copied!' : 'Copy Link'}
-                          </Button>
-                        </Stack>
-                      </Paper>
-                    )}
+                        Share
+                      </Button>
+                      
+                      {showShareTooltip && (
+                        <Paper
+                          elevation={3}
+                          sx={{
+                            p: 2,
+                            borderRadius: 2,
+                            position: 'absolute',
+                            top: '100%',
+                            right: 0,
+                            mt: 1,
+                            zIndex: 1000,
+                            bgcolor: 'background.paper',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            minWidth: 200,
+                          }}
+                        >
+                          <Stack spacing={1}>
+                            <Button
+                              fullWidth
+                              startIcon={<FacebookIcon />}
+                              onClick={() => handleShare('facebook')}
+                              sx={{
+                                color: 'primary.main',
+                                justifyContent: 'flex-start',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: 'primary.lighter' },
+                              }}
+                            >
+                              Share on Facebook
+                            </Button>
+                            <Button
+                              fullWidth
+                              startIcon={<TwitterIcon />}
+                              onClick={() => handleShare('twitter')}
+                              sx={{
+                                color: 'primary.main',
+                                justifyContent: 'flex-start',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: 'primary.lighter' },
+                              }}
+                            >
+                              Share on Twitter
+                            </Button>
+                            <Button
+                              fullWidth
+                              startIcon={<WhatsAppIcon />}
+                              onClick={() => handleShare('whatsapp')}
+                              sx={{
+                                color: 'primary.main',
+                                justifyContent: 'flex-start',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: 'primary.lighter' },
+                              }}
+                            >
+                              Share on WhatsApp
+                            </Button>
+                            <Divider />
+                            <Button
+                              fullWidth
+                              startIcon={<CopyIcon />}
+                              onClick={() => handleShare('copy')}
+                              sx={{
+                                color: copySuccess ? 'success.main' : 'primary.main',
+                                justifyContent: 'flex-start',
+                                textTransform: 'none',
+                                '&:hover': { bgcolor: 'primary.lighter' },
+                              }}
+                            >
+                              {copySuccess ? 'Link Copied!' : 'Copy Link'}
+                            </Button>
+                          </Stack>
+                        </Paper>
+                      )}
+                    </Box>
                   </Stack>
                 </Box>
 
@@ -421,6 +561,66 @@ export default function PropertyPage({ params }) {
 
               {/* Amenities Section */}
               <PropertyAmenities amenities={property.amenities} />
+
+              {/* Reviews Section */}
+              <Box id="reviews-section" sx={{ mt: 6, mb: 6 }}>
+                <Typography variant="h5" sx={{ fontWeight: 600, mb: 3 }}>
+                  Reviews {property.reviewCount && `(${property.reviewCount})`}
+                </Typography>
+                
+                {property.avgRating && (
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                        {property.avgRating}
+                      </Typography>
+                      <Star sx={{ color: '#FFB400', fontSize: '2rem' }} />
+                    </Box>
+                    <Typography variant="body1" color="text.secondary">
+                      Based on {property.reviewCount || 0} reviews
+                    </Typography>
+                  </Box>
+                )}
+
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: 4, 
+                    borderRadius: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    textAlign: 'center' 
+                  }}
+                >
+                  <Typography variant="h6" color="text.secondary" gutterBottom>
+                    No reviews yet
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    Be the first to share your experience with this property!
+                  </Typography>
+                  {user && (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: 'none',
+                        px: 3,
+                        background: '#FF385C',
+                        '&:hover': {
+                          background: '#E61E4D',
+                        },
+                      }}
+                      onClick={() => {
+                        // Navigate to review form or open review modal
+                        router.push(`/properties/${params.id}/write-review`);
+                      }}
+                    >
+                      Write a Review
+                    </Button>
+                  )}
+                </Paper>
+              </Box>
 
               {/* Map Section */}
               <Box sx={{ mt: 6, mb: 6 }}>

@@ -5,43 +5,43 @@ export const inter = Inter({ subsets: ["latin"] });
 export const typography = {
   fontFamily: inter.style.fontFamily,
   h1: {
-    fontSize: '4rem',
-    fontWeight: 800,
-    lineHeight: 1.2,
-    '@media (max-width:600px)': {
-      fontSize: '2.5rem',
-    },
-  },
-  h2: {
-    fontSize: '3rem',
+    fontSize: '2.5rem',
     fontWeight: 700,
-    lineHeight: 1.3,
+    lineHeight: 1.2,
     '@media (max-width:600px)': {
       fontSize: '2rem',
     },
   },
+  h2: {
+    fontSize: '2rem',
+    fontWeight: 600,
+    lineHeight: 1.3,
+    '@media (max-width:600px)': {
+      fontSize: '1.75rem',
+    },
+  },
   h3: {
-    fontSize: '2.5rem',
-    fontWeight: 700,
+    fontSize: '1.75rem',
+    fontWeight: 600,
     lineHeight: 1.3,
   },
   h4: {
-    fontSize: '2rem',
-    fontWeight: 700,
+    fontSize: '1.5rem',
+    fontWeight: 600,
     lineHeight: 1.4,
   },
   h5: {
-    fontSize: '1.5rem',
+    fontSize: '1.25rem',
     fontWeight: 600,
     lineHeight: 1.5,
   },
   h6: {
-    fontSize: '1.25rem',
+    fontSize: '1.125rem',
     fontWeight: 600,
     lineHeight: 1.6,
   },
   subtitle1: {
-    fontSize: '1.125rem',
+    fontSize: '1rem',
     lineHeight: 1.6,
     letterSpacing: '0.00938em',
   },
@@ -51,17 +51,18 @@ export const typography = {
     letterSpacing: '0.00714em',
   },
   body1: {
-    fontSize: '1rem',
-    lineHeight: 1.7,
+    fontSize: '0.875rem',
+    lineHeight: 1.6,
     letterSpacing: '0.00938em',
   },
   body2: {
-    fontSize: '0.875rem',
-    lineHeight: 1.7,
+    fontSize: '0.8125rem',
+    lineHeight: 1.6,
     letterSpacing: '0.01071em',
   },
   button: {
     textTransform: 'none',
     fontWeight: 600,
+    fontSize: '0.875rem',
   },
 }; 

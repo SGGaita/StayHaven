@@ -116,6 +116,23 @@ class ServerLogger {
   appDebug(action, message, data = {}) {
     return this.log(LOG_LEVELS.DEBUG, LOG_CATEGORIES.APP, action, message, data);
   }
+
+  // Generic logging methods for backward compatibility
+  info(action, message, data = {}) {
+    return this.log(LOG_LEVELS.INFO, LOG_CATEGORIES.APP, action, message, data);
+  }
+
+  error(action, message, data = {}) {
+    return this.log(LOG_LEVELS.ERROR, LOG_CATEGORIES.APP, action, message, data);
+  }
+
+  warn(action, message, data = {}) {
+    return this.log(LOG_LEVELS.WARN, LOG_CATEGORIES.APP, action, message, data);
+  }
+
+  debug(action, message, data = {}) {
+    return this.log(LOG_LEVELS.DEBUG, LOG_CATEGORIES.APP, action, message, data);
+  }
 }
 
 // Create and export a singleton instance

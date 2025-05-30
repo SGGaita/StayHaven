@@ -176,6 +176,9 @@ export async function POST(request) {
       );
     }
 
+    // Generate booking reference if not provided
+    const bookingRef = bookingData.clientBookingRef || `BK-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+
     // Filter to include only fields that exist in the Booking model
     // This helps prevent errors with fields not in the schema
     const validBookingData = {
@@ -184,7 +187,13 @@ export async function POST(request) {
       startDate: new Date(bookingData.startDate),
       endDate: new Date(bookingData.endDate),
       status: bookingData.status,
-      price: parseFloat(bookingData.price)
+      price: parseFloat(bookingData.price),
+      guests: parseInt(bookingData.guests, 10) || 1,
+      bookingRef: bookingRef,
+      subtotal: parseFloat(bookingData.subtotal || 0),
+      cleaningFee: parseFloat(bookingData.cleaningFee || 0),
+      serviceFee: parseFloat(bookingData.serviceFee || 0),
+      securityDeposit: parseFloat(bookingData.securityDeposit || 0)
     };
     
     // Create the booking with validated data
@@ -192,16 +201,9 @@ export async function POST(request) {
       data: validBookingData
     });
     
-    // Generate a booking response with additional client-side data
+    // Return the created booking data
     const bookingResponse = {
-      ...booking,
-      bookingRef: bookingData.clientBookingRef || `BK-${booking.id.substring(0, 8)}`,
-      // Include fields from the request that we want to send back but aren't in the DB
-      subtotal: bookingData.subtotal,
-      cleaningFee: bookingData.cleaningFee || 0,
-      serviceFee: bookingData.serviceFee || 0,
-      securityDeposit: bookingData.securityDeposit || 0,
-      guests: bookingData.guests || 1
+      ...booking
     };
     
     serverLogger.apiInfo('bookings', 'Booking created successfully', {

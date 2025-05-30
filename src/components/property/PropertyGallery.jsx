@@ -18,8 +18,10 @@ export default function PropertyGallery({ photos = [], propertyName }) {
   const [openModal, setOpenModal] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
-  // Use provided photos or fall back to default images
-  const allPhotos = photos.length >= 5 ? photos : defaultImages;
+  // Use uploaded photos first, then supplement with default images if needed
+  const allPhotos = photos.length > 0 
+    ? [...photos, ...defaultImages].slice(0, Math.max(5, photos.length))
+    : defaultImages;
 
   const handleOpenModal = (index) => {
     setCurrentImageIndex(index);

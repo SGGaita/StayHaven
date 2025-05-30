@@ -18,6 +18,8 @@ import {
   Chip,
   IconButton,
   Tooltip,
+  useTheme,
+  alpha,
 } from '@mui/material';
 import {
   Search,
@@ -34,6 +36,10 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, addDays } from 'date-fns';
+import { motion } from 'framer-motion';
+
+const MotionPaper = motion(Paper);
+const MotionBox = motion(Box);
 
 // Popular destinations for suggestions
 const popularDestinations = [
@@ -54,6 +60,7 @@ export default function SearchBar() {
   
   const locationRef = useRef(null);
   const searchBarRef = useRef(null);
+  const theme = useTheme();
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -101,18 +108,24 @@ export default function SearchBar() {
 
   return (
     <Box ref={searchBarRef} sx={{ width: '100%', maxWidth: '1200px', mx: 'auto' }}>
-      <Paper
-        elevation={3}
+      <MotionPaper
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        elevation={0}
         sx={{
-          p: { xs: 2, md: 3 },
-          borderRadius: 3,
-          bgcolor: 'rgba(255, 255, 255, 0.98)',
+          p: { xs: 2.5, md: 3.5 },
+          borderRadius: '24px',
+          background: 'rgba(255, 255, 255, 0.95)',
           backdropFilter: 'blur(20px)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          border: '1px solid',
+          borderColor: alpha(theme.palette.primary.main, 0.08),
+          boxShadow: `0 20px 60px ${alpha(theme.palette.primary.main, 0.15)}`,
+          transition: 'all 0.3s ease-in-out',
           '&:hover': {
-            transform: 'translateY(-2px)',
-            boxShadow: '0 12px 48px rgba(0, 0, 0, 0.12)',
+            transform: 'translateY(-4px)',
+            boxShadow: `0 25px 80px ${alpha(theme.palette.primary.main, 0.2)}`,
+            borderColor: alpha(theme.palette.primary.main, 0.15),
           },
         }}
       >
@@ -120,7 +133,7 @@ export default function SearchBar() {
           sx={{
             display: 'flex',
             flexDirection: { xs: 'column', md: 'row' },
-            gap: 2,
+            gap: { xs: 3, md: 2 },
             position: 'relative',
           }}
         >
@@ -148,11 +161,29 @@ export default function SearchBar() {
                   </InputAdornment>
                 ),
                 sx: {
-                  borderRadius: 2,
-                  bgcolor: activeField === 'location' ? 'action.hover' : 'transparent',
-                  '&:hover': { bgcolor: 'action.hover' },
-                  transition: 'background-color 0.2s',
+                  borderRadius: '16px',
+                  backgroundColor: activeField === 'location' 
+                    ? alpha(theme.palette.primary.main, 0.04) 
+                    : 'transparent',
+                  border: '2px solid',
+                  borderColor: activeField === 'location' 
+                    ? alpha(theme.palette.primary.main, 0.2) 
+                    : 'transparent',
+                  '&:hover': { 
+                    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                    borderColor: alpha(theme.palette.primary.main, 0.1),
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    border: 'none',
+                  },
+                  transition: 'all 0.2s ease-in-out',
                 }
+              }}
+              sx={{
+                '& .MuiInputBase-input': {
+                  fontSize: '1rem',
+                  fontWeight: 500,
+                },
               }}
             />
 
@@ -166,15 +197,30 @@ export default function SearchBar() {
             >
               {({ TransitionProps }) => (
                 <Fade {...TransitionProps} timeout={200}>
-                  <Card sx={{ mt: 1, boxShadow: '0 4px 24px rgba(0, 0, 0, 0.12)' }}>
-                    <Box sx={{ p: 2 }}>
+                  <Card sx={{ 
+                    mt: 1, 
+                    borderRadius: '16px',
+                    boxShadow: `0 12px 40px ${alpha(theme.palette.primary.main, 0.15)}`,
+                    border: '1px solid',
+                    borderColor: alpha(theme.palette.primary.main, 0.08),
+                  }}>
+                    <Box sx={{ p: 2.5 }}>
                       <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
                         <Tooltip title="Use current location">
-                          <IconButton size="small" onClick={handleUseCurrentLocation}>
+                          <IconButton 
+                            size="small" 
+                            onClick={handleUseCurrentLocation}
+                            sx={{
+                              bgcolor: alpha(theme.palette.primary.main, 0.08),
+                              '&:hover': {
+                                bgcolor: alpha(theme.palette.primary.main, 0.15),
+                              },
+                            }}
+                          >
                             <NearMe fontSize="small" color="primary" />
                           </IconButton>
                         </Tooltip>
-                        <Typography variant="subtitle2" color="text.secondary">
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
                           Popular destinations
                         </Typography>
                       </Box>
@@ -185,15 +231,24 @@ export default function SearchBar() {
                             button
                             onClick={() => handleLocationSelect(destination)}
                             sx={{
-                              borderRadius: 1,
+                              borderRadius: '12px',
                               mb: 0.5,
-                              '&:hover': { bgcolor: 'action.hover' },
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': { 
+                                bgcolor: alpha(theme.palette.primary.main, 0.06),
+                                transform: 'translateX(4px)',
+                              },
                             }}
                           >
                             <ListItemIcon sx={{ minWidth: 40 }}>
                               <destination.icon color="primary" />
                             </ListItemIcon>
-                            <ListItemText primary={destination.name} />
+                            <ListItemText 
+                              primary={destination.name} 
+                              primaryTypographyProps={{
+                                fontWeight: 500,
+                              }}
+                            />
                           </ListItem>
                         ))}
                       </List>
@@ -235,11 +290,29 @@ export default function SearchBar() {
                         </InputAdornment>
                       ),
                       sx: {
-                        borderRadius: 2,
-                        bgcolor: activeField === 'checkIn' ? 'action.hover' : 'transparent',
-                        '&:hover': { bgcolor: 'action.hover' },
-                        transition: 'background-color 0.2s',
+                        borderRadius: '16px',
+                        backgroundColor: activeField === 'checkIn' 
+                          ? alpha(theme.palette.primary.main, 0.04) 
+                          : 'transparent',
+                        border: '2px solid',
+                        borderColor: activeField === 'checkIn' 
+                          ? alpha(theme.palette.primary.main, 0.2) 
+                          : 'transparent',
+                        '&:hover': { 
+                          backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                          borderColor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          border: 'none',
+                        },
+                        transition: 'all 0.2s ease-in-out',
                       }
+                    }}
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
                     }}
                   />
                 )}
@@ -263,11 +336,29 @@ export default function SearchBar() {
                         </InputAdornment>
                       ),
                       sx: {
-                        borderRadius: 2,
-                        bgcolor: activeField === 'checkOut' ? 'action.hover' : 'transparent',
-                        '&:hover': { bgcolor: 'action.hover' },
-                        transition: 'background-color 0.2s',
+                        borderRadius: '16px',
+                        backgroundColor: activeField === 'checkOut' 
+                          ? alpha(theme.palette.primary.main, 0.04) 
+                          : 'transparent',
+                        border: '2px solid',
+                        borderColor: activeField === 'checkOut' 
+                          ? alpha(theme.palette.primary.main, 0.2) 
+                          : 'transparent',
+                        '&:hover': { 
+                          backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                          borderColor: alpha(theme.palette.primary.main, 0.1),
+                        },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          border: 'none',
+                        },
+                        transition: 'all 0.2s ease-in-out',
                       }
+                    }}
+                    sx={{
+                      '& .MuiInputBase-input': {
+                        fontSize: '1rem',
+                        fontWeight: 500,
+                      },
                     }}
                   />
                 )}
@@ -291,13 +382,31 @@ export default function SearchBar() {
               ),
               inputProps: { min: 1, max: 10 },
               sx: {
-                borderRadius: 2,
-                bgcolor: activeField === 'guests' ? 'action.hover' : 'transparent',
-                '&:hover': { bgcolor: 'action.hover' },
-                transition: 'background-color 0.2s',
+                borderRadius: '16px',
+                backgroundColor: activeField === 'guests' 
+                  ? alpha(theme.palette.primary.main, 0.04) 
+                  : 'transparent',
+                border: '2px solid',
+                borderColor: activeField === 'guests' 
+                  ? alpha(theme.palette.primary.main, 0.2) 
+                  : 'transparent',
+                '&:hover': { 
+                  backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                  borderColor: alpha(theme.palette.primary.main, 0.1),
+                },
+                '& .MuiOutlinedInput-notchedOutline': {
+                  border: 'none',
+                },
+                transition: 'all 0.2s ease-in-out',
               }
             }}
-            sx={{ width: { xs: '100%', md: '10%' } }}
+            sx={{ 
+              width: { xs: '100%', md: '10%' },
+              '& .MuiInputBase-input': {
+                fontSize: '1rem',
+                fontWeight: 500,
+              },
+            }}
           />
 
           {/* Search Button */}
@@ -307,31 +416,38 @@ export default function SearchBar() {
             onClick={handleSearch}
             startIcon={<Search />}
             sx={{
-              height: '56px',
+              height: '64px',
               width: { xs: '100%', md: '10%' },
-              minWidth: { md: '120px' },
-              borderRadius: 2,
+              minWidth: { md: '140px' },
+              borderRadius: '16px',
               px: { xs: 4, md: 2 },
               bgcolor: 'primary.main',
-              transition: 'all 0.2s',
+              fontSize: '1rem',
+              fontWeight: 700,
+              textTransform: 'none',
+              boxShadow: `0 8px 24px ${alpha(theme.palette.primary.main, 0.3)}`,
+              transition: 'all 0.3s ease-in-out',
               '&:hover': {
                 bgcolor: 'primary.dark',
-                transform: 'translateY(-2px)',
-                boxShadow: '0 6px 20px rgba(0, 0, 0, 0.15)',
+                transform: 'translateY(-3px)',
+                boxShadow: `0 12px 32px ${alpha(theme.palette.primary.main, 0.4)}`,
               },
             }}
           >
             Search
           </Button>
         </Box>
-      </Paper>
+      </MotionPaper>
 
       {/* Active Search Indicators */}
-      <Box
+      <MotionBox
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.3 }}
         sx={{
           display: 'flex',
-          gap: 1,
-          mt: 2,
+          gap: 1.5,
+          mt: 3,
           flexWrap: 'wrap',
           justifyContent: 'center',
         }}
@@ -342,7 +458,17 @@ export default function SearchBar() {
             label={location}
             onDelete={handleClearLocation}
             color="primary"
-            variant="outlined"
+            variant="filled"
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+              '& .MuiChip-deleteIcon': {
+                color: 'primary.main',
+              },
+            }}
           />
         )}
         {checkIn && checkOut && (
@@ -354,7 +480,17 @@ export default function SearchBar() {
               setCheckOut(null);
             }}
             color="primary"
-            variant="outlined"
+            variant="filled"
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+              '& .MuiChip-deleteIcon': {
+                color: 'primary.main',
+              },
+            }}
           />
         )}
         {guests > 1 && (
@@ -363,10 +499,20 @@ export default function SearchBar() {
             label={`${guests} guests`}
             onDelete={() => setGuests(1)}
             color="primary"
-            variant="outlined"
+            variant="filled"
+            sx={{
+              borderRadius: '12px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              bgcolor: alpha(theme.palette.primary.main, 0.1),
+              color: 'primary.main',
+              '& .MuiChip-deleteIcon': {
+                color: 'primary.main',
+              },
+            }}
           />
         )}
-      </Box>
+      </MotionBox>
     </Box>
   );
 } 

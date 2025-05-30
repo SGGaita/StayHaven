@@ -1,28 +1,38 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import { verifyAuth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export async function GET(req) {
   try {
-    // Get the authorization header
-    const authHeader = req.headers.get('authorization');
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
     
-    if (!authHeader) {
+    if (!sessionCookie) {
       return NextResponse.json(
-        { error: 'No authorization header' },
+        { error: 'Unauthorized access' },
         { status: 401 }
       );
     }
 
-    // Verify the authentication
-    const userId = await verifyAuth(authHeader);
-    
-    if (!userId) {
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error: 'Invalid session' },
         { status: 401 }
       );
     }
+    
+    if (!session?.user?.id || !session?.isAuthenticated) {
+      return NextResponse.json(
+        { error: 'Unauthorized access' },
+        { status: 401 }
+      );
+    }
+    
+    const userId = session.user.id;
 
     // Get user's bookings
     const bookings = await prisma.booking.findMany({
@@ -32,12 +42,11 @@ export async function GET(req) {
       include: {
         property: {
           select: {
+            id: true,
             name: true,
-            address: true,
+            location: true,
             photos: true,
             price: true,
-            cleaningFee: true,
-            securityDeposit: true
           }
         }
       },
