@@ -46,6 +46,19 @@ import {
   Email as EmailIcon,
   Security as SecurityIcon,
   Money as MoneyIcon,
+  Analytics as AnalyticsIcon,
+  Business as BusinessIcon,
+  People as PeopleIcon,
+  Subscriptions as SubscriptionsIcon,
+  AccountBalance as AccountBalanceIcon,
+  Verified as VerifiedIcon,
+  PersonAdd as PersonAddIcon,
+  Web as WebIcon,
+  Payment as PaymentIcon,
+  CurrencyExchange as CurrencyIcon,
+  Gavel as GavelIcon,
+  Assessment as AssessmentIcon,
+  Timeline as TimelineIcon,
 } from '@mui/icons-material';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectCurrentUser, logout } from '@/redux/features/authSlice';
@@ -60,7 +73,7 @@ const getMenuItems = (role) => {
   if (!role) return []; // Return empty array if no role is provided
 
   const commonItems = [
-    { text: 'Overview', icon: <DashboardIcon />, path: '/dashboard' },
+    { text: 'Overview', icon: <DashboardIcon />, path: role === 'SUPER_ADMIN' ? '/dashboard/admin' : '/dashboard' },
   ];
 
   const roleBasedItems = {
@@ -97,17 +110,47 @@ const getMenuItems = (role) => {
     ],
     SUPER_ADMIN: [
       {
-        category: 'Management',
+        category: 'User Management',
         items: [
-          { text: 'Users', icon: <PersonIcon />, path: '/dashboard/admin/users' },
-          { text: 'Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
-          { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
+          { text: 'All Users', icon: <PeopleIcon />, path: '/dashboard/admin/users' },
+          { text: 'Property Managers', icon: <BusinessIcon />, path: '/dashboard/admin/property-managers' },
+          { text: 'New Accounts', icon: <PersonAddIcon />, path: '/dashboard/admin/users/new' },
+        ],
+      },
+      {
+        category: 'Property Management',
+        items: [
+          { text: 'All Properties', icon: <ApartmentIcon />, path: '/dashboard/admin/properties' },
+          { text: 'Property Verification', icon: <VerifiedIcon />, path: '/dashboard/admin/properties/verification' },
+        ],
+      },
+      {
+        category: 'Booking Management',
+        items: [
+          { text: 'All Bookings', icon: <BookingIcon />, path: '/dashboard/admin/bookings' },
+          { text: 'Dispute Resolution', icon: <GavelIcon />, path: '/dashboard/admin/bookings' },
+        ],
+      },
+      {
+        category: 'Financial',
+        items: [
+          { text: 'Revenue Analytics', icon: <AccountBalanceIcon />, path: '/dashboard/admin/revenue' },
+          { text: 'Subscriptions', icon: <SubscriptionsIcon />, path: '/dashboard/admin/subscriptions' },
+          { text: 'Billing & Payments', icon: <PaymentIcon />, path: '/dashboard/admin/billing' },
+        ],
+      },
+      {
+        category: 'Analytics & Reports',
+        items: [
+          { text: 'Platform Analytics', icon: <AnalyticsIcon />, path: '/dashboard/admin/analytics' },
+          { text: 'Performance Reports', icon: <AssessmentIcon />, path: '/dashboard/admin/reports' },
+          { text: 'Activity Logs', icon: <TimelineIcon />, path: '/dashboard/admin/activities' },
         ],
       },
       {
         category: 'Communication',
         items: [
-          { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
+          { text: 'Messages & Support', icon: <MessageIcon />, path: '/dashboard/admin/messages' },
         ],
       },
       {
@@ -119,16 +162,18 @@ const getMenuItems = (role) => {
         ],
       },
       {
-        category: 'System',
+        category: 'System & Security',
         items: [
-          { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
-          { text: 'Security', icon: <SecurityIcon />, path: '/dashboard/admin/security' },
+          { text: 'Platform Settings', icon: <SettingsIcon />, path: '/dashboard/admin/settings' },
+          { text: 'Security & Access', icon: <SecurityIcon />, path: '/dashboard/admin/security' },
+          { text: 'System Health', icon: <DashboardIcon />, path: '/dashboard/admin/system' },
         ],
       },
     ],
     PROPERTY_MANAGER: [
       { text: 'My Properties', icon: <ApartmentIcon />, path: '/dashboard/properties' },
       { text: 'Bookings', icon: <BookingIcon />, path: '/dashboard/bookings' },
+      { text: 'Analytics', icon: <AnalyticsIcon />, path: '/dashboard/properties/analytics' },
       { text: 'Messages', icon: <MessageIcon />, path: '/dashboard/messages' },
       { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
     ],
@@ -873,20 +918,6 @@ export default function DashboardLayout({ children }) {
                     }} 
                   />
                 </MenuItem>
-                {user?.role === 'SUPER_ADMIN' && (
-                  <MenuItem onClick={() => handleNavigation('/admin')}>
-                    <ListItemIcon>
-                      <AdminIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText 
-                      primary="Admin Panel" 
-                      primaryTypographyProps={{ 
-                        variant: 'body2',
-                        fontWeight: 500
-                      }} 
-                    />
-                  </MenuItem>
-                )}
                 <Divider sx={{ my: 1 }} />
                 <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                   <ListItemIcon sx={{ color: 'error.main' }}>

@@ -33,6 +33,20 @@ import {
   Select,
   MenuItem,
   Badge,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemAvatar,
+  LinearProgress,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TablePagination,
+  Collapse,
+  Menu,
 } from '@mui/material';
 import {
   CalendarToday as CalendarIcon,
@@ -50,12 +64,28 @@ import {
   Email as EmailIcon,
   AccessTime as TimeIcon,
   AttachMoney as MoneyIcon,
+  MoreVert as MoreVertIcon,
+  Check as CheckIcon,
+  CheckCircle as CheckCircleIcon,
+  Schedule as ScheduleIcon,
+  Hotel as HotelIcon,
+  FlightTakeoff as CheckInIcon,
+  FlightLand as CheckOutIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  DateRange as DateRangeIcon,
+  Search as SearchIcon,
+  Refresh as RefreshIcon,
+  Info as InfoIcon,
+  Warning as WarningIcon,
+  Edit as EditIcon,
 } from '@mui/icons-material';
 import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/features/authSlice';
 import Image from 'next/image';
+import moment from 'moment';
 
 const BookingStatusConfig = {
   PENDING: { 
@@ -118,6 +148,329 @@ const TabPanel = ({ children, value, index, ...other }) => (
   </div>
 );
 
+const BookingCard = ({ booking, onStatusChange, onViewDetails, onContactGuest, onCancel }) => {
+  const theme = useTheme();
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [expanded, setExpanded] = useState(false);
+
+  const handleMenuOpen = (event) => {
+    event.stopPropagation();
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return 'success';
+      case 'PENDING':
+        return 'warning';
+      case 'CANCELLED':
+        return 'error';
+      case 'COMPLETED':
+        return 'info';
+      case 'CHECKED_IN':
+        return 'primary';
+      default:
+        return 'default';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'CONFIRMED':
+        return <CheckCircleIcon fontSize="small" />;
+      case 'PENDING':
+        return <ScheduleIcon fontSize="small" />;
+      case 'CANCELLED':
+        return <CancelIcon fontSize="small" />;
+      case 'COMPLETED':
+        return <CheckIcon fontSize="small" />;
+      case 'CHECKED_IN':
+        return <HotelIcon fontSize="small" />;
+      default:
+        return <InfoIcon fontSize="small" />;
+    }
+  };
+
+  const isCheckInToday = () => {
+    return moment(booking.startDate).isSame(moment(), 'day');
+  };
+
+  const isCheckOutToday = () => {
+    return moment(booking.endDate).isSame(moment(), 'day');
+  };
+
+  const daysUntilCheckIn = () => {
+    return moment(booking.startDate).diff(moment(), 'days');
+  };
+
+  return (
+    <Card
+      elevation={0}
+      sx={{
+        borderRadius: 3,
+        border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        '&:hover': {
+          transform: 'translateY(-2px)',
+          boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.1)}`,
+          borderColor: alpha('#FF385C', 0.3),
+        },
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          {/* Header */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                <Typography variant="h6" fontWeight="bold">
+                  {booking.property?.name}
+                </Typography>
+                {isCheckInToday() && (
+                  <Chip
+                    label="Check-in Today"
+                    size="small"
+                    color="primary"
+                    icon={<CheckInIcon fontSize="small" />}
+                  />
+                )}
+                {isCheckOutToday() && (
+                  <Chip
+                    label="Check-out Today"
+                    size="small"
+                    color="secondary"
+                    icon={<CheckOutIcon fontSize="small" />}
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                Booking #{booking.id?.slice(0, 8)}
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={1} alignItems="center">
+              <Chip
+                label={booking.status}
+                color={getStatusColor(booking.status)}
+                icon={getStatusIcon(booking.status)}
+                size="small"
+                sx={{ fontWeight: 600 }}
+              />
+              <IconButton onClick={handleMenuOpen} size="small">
+                <MoreVertIcon />
+              </IconButton>
+            </Stack>
+          </Box>
+
+          {/* Guest Information */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Avatar
+              sx={{
+                bgcolor: alpha('#FF385C', 0.1),
+                color: '#FF385C',
+                width: 40,
+                height: 40,
+              }}
+            >
+              <PersonIcon />
+            </Avatar>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" fontWeight="600">
+                {booking.customer?.firstName} {booking.customer?.lastName}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {booking.customer?.email}
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="h6" fontWeight="bold" sx={{ color: '#FF385C' }}>
+                ${booking.totalPrice?.toLocaleString()}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {booking.nights} nights
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Dates */}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: 2,
+              p: 2,
+              backgroundColor: alpha(theme.palette.primary.main, 0.05),
+              borderRadius: 2,
+            }}
+          >
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Check-in
+              </Typography>
+              <Typography variant="body1" fontWeight="600">
+                {moment(booking.startDate).format('MMM DD, YYYY')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {moment(booking.startDate).format('dddd')}
+              </Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Check-out
+              </Typography>
+              <Typography variant="body1" fontWeight="600">
+                {moment(booking.endDate).format('MMM DD, YYYY')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {moment(booking.endDate).format('dddd')}
+              </Typography>
+            </Box>
+          </Box>
+
+          {/* Quick Actions */}
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ViewIcon />}
+              onClick={() => onViewDetails(booking)}
+            >
+              Details
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<MessageIcon />}
+              onClick={() => onContactGuest(booking)}
+            >
+              Contact
+            </Button>
+            {booking.status === 'CONFIRMED' && daysUntilCheckIn() <= 1 && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<CheckInIcon />}
+                onClick={() => onStatusChange(booking.id, 'CHECKED_IN')}
+                sx={{ bgcolor: '#28A745', '&:hover': { bgcolor: '#218838' } }}
+              >
+                Check In
+              </Button>
+            )}
+            {booking.status === 'CHECKED_IN' && (
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<CheckOutIcon />}
+                onClick={() => onStatusChange(booking.id, 'COMPLETED')}
+                sx={{ bgcolor: '#17A2B8', '&:hover': { bgcolor: '#138496' } }}
+              >
+                Check Out
+              </Button>
+            )}
+          </Box>
+
+          {/* Expandable Details */}
+          <Collapse in={expanded}>
+            <Divider sx={{ my: 2 }} />
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Guest Information
+                </Typography>
+                <Stack spacing={1}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PhoneIcon fontSize="small" color="action" />
+                    <Typography variant="body2">
+                      {booking.customer?.phone || 'Not provided'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon fontSize="small" color="action" />
+                    <Typography variant="body2">
+                      {booking.guests} guests
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Booking Details
+                </Typography>
+                <Stack spacing={1}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Base price:
+                    </Typography>
+                    <Typography variant="body2">
+                      ${booking.basePrice?.toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Service fee:
+                    </Typography>
+                    <Typography variant="body2">
+                      ${booking.serviceFee?.toLocaleString() || '0'}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Taxes:
+                    </Typography>
+                    <Typography variant="body2">
+                      ${booking.taxes?.toLocaleString() || '0'}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Grid>
+            </Grid>
+          </Collapse>
+
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setExpanded(!expanded)}
+            endIcon={expanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+            sx={{ alignSelf: 'flex-start' }}
+          >
+            {expanded ? 'Show Less' : 'Show More'}
+          </Button>
+        </Stack>
+      </CardContent>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={() => { handleMenuClose(); onViewDetails(booking); }}>
+          <ViewIcon sx={{ mr: 1 }} fontSize="small" />
+          View Details
+        </MenuItem>
+        <MenuItem onClick={() => { handleMenuClose(); onContactGuest(booking); }}>
+          <MessageIcon sx={{ mr: 1 }} fontSize="small" />
+          Contact Guest
+        </MenuItem>
+        <MenuItem onClick={() => { handleMenuClose(); /* handle edit */ }}>
+          <EditIcon sx={{ mr: 1 }} fontSize="small" />
+          Edit Booking
+        </MenuItem>
+        <Divider />
+        {booking.status !== 'CANCELLED' && (
+          <MenuItem onClick={() => { handleMenuClose(); onCancel(booking); }} sx={{ color: 'error.main' }}>
+            <CancelIcon sx={{ mr: 1 }} fontSize="small" />
+            Cancel Booking
+          </MenuItem>
+        )}
+      </Menu>
+    </Card>
+  );
+};
+
 export default function BookingsPage() {
   const router = useRouter();
   const user = useSelector(selectCurrentUser);
@@ -132,6 +485,27 @@ export default function BookingsPage() {
   const [processing, setProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [cancellationReason, setCancellationReason] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [propertyFilter, setPropertyFilter] = useState('all');
+  const [currentTab, setCurrentTab] = useState(0);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [properties, setProperties] = useState([]);
+  const [quickStats, setQuickStats] = useState({
+    totalBookings: 0,
+    pendingBookings: 0,
+    confirmedBookings: 0,
+    monthlyRevenue: 0,
+    checkInsToday: 0,
+    checkOutsToday: 0,
+  });
+
+  // Dialog states
+  const [detailsDialog, setDetailsDialog] = useState(false);
+  const [contactDialog, setContactDialog] = useState(false);
+  const [contactMessage, setContactMessage] = useState('');
 
   useEffect(() => {
     if (!user || !user.id) {
@@ -140,6 +514,8 @@ export default function BookingsPage() {
     }
 
     fetchBookings();
+    fetchProperties();
+    fetchQuickStats();
   }, [user, router]);
 
   const fetchBookings = async () => {
@@ -147,25 +523,180 @@ export default function BookingsPage() {
       setLoading(true);
       const response = await fetch('/api/dashboard/bookings', {
         credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        }
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch bookings');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Bookings API response:', data); // Debug log
+        setBookings(Array.isArray(data) ? data : []);
+      } else {
+        console.error('Failed to fetch bookings:', response.status, response.statusText);
+        setBookings([]);
       }
-
-      const data = await response.json();
-      setBookings(data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching bookings:', err);
-      setError(err.message);
+    } catch (error) {
+      console.error('Error fetching bookings:', error);
       setBookings([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchProperties = async () => {
+    try {
+      const response = await fetch('/api/dashboard/properties', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setProperties(data.properties || []);
+      }
+    } catch (error) {
+      console.error('Error fetching properties:', error);
+    }
+  };
+
+  const fetchQuickStats = async () => {
+    try {
+      const response = await fetch('/api/dashboard/bookings/stats', {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setQuickStats(data);
+      }
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const handleStatusChange = async (bookingId, newStatus) => {
+    try {
+      const response = await fetch(`/api/dashboard/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: newStatus }),
+      });
+
+      if (response.ok) {
+        fetchBookings();
+        fetchQuickStats();
+      }
+    } catch (error) {
+      console.error('Error updating booking status:', error);
+    }
+  };
+
+  const handleViewDetails = (booking) => {
+    setSelectedBooking(booking);
+    setDetailsDialog(true);
+  };
+
+  const handleContactGuest = (booking) => {
+    setSelectedBooking(booking);
+    setContactMessage(`Hi ${booking.customer?.firstName}, regarding your upcoming stay at ${booking.property?.name}...`);
+    setContactDialog(true);
+  };
+
+  const handleCancelBooking = (booking) => {
+    setSelectedBooking(booking);
+    setCancelDialogOpen(true);
+  };
+
+  const confirmCancelBooking = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/cancel`, {
+        method: 'PATCH',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        fetchBookings();
+        fetchQuickStats();
+        setCancelDialogOpen(false);
+        setSelectedBooking(null);
+      }
+    } catch (error) {
+      console.error('Error cancelling booking:', error);
+    }
+  };
+
+  const sendMessage = async () => {
+    if (!selectedBooking || !contactMessage.trim()) return;
+
+    try {
+      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/message`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ message: contactMessage }),
+      });
+
+      if (response.ok) {
+        setContactDialog(false);
+        setContactMessage('');
+        setSelectedBooking(null);
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  };
+
+  const processPayment = async () => {
+    if (!selectedBooking) return;
+
+    try {
+      setProcessing(true);
+      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/payment`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentMethod,
+          amount: selectedBooking.price || selectedBooking.totalPrice,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Payment failed');
+      }
+
+      const result = await response.json();
+      
+      // Update the booking in the list
+      setBookings(prev => 
+        prev.map(booking => 
+          booking.id === selectedBooking.id 
+            ? { ...booking, status: 'CONFIRMED' }
+            : booking
+        )
+      );
+
+      setPaymentDialogOpen(false);
+      setSelectedBooking(null);
+      setPaymentMethod('card');
+      
+      // Refresh data
+      fetchBookings();
+      fetchQuickStats();
+      
+      // Show success message
+      alert('Payment processed successfully!');
+    } catch (error) {
+      console.error('Payment error:', error);
+      alert('Payment failed. Please try again.');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -226,106 +757,6 @@ export default function BookingsPage() {
   const handlePayment = (booking) => {
     setSelectedBooking(booking);
     setPaymentDialogOpen(true);
-  };
-
-  const handleCancelBooking = (booking) => {
-    setSelectedBooking(booking);
-    setCancelDialogOpen(true);
-  };
-
-  const handleDownloadReceipt = (bookingId) => {
-    // TODO: Implement receipt download
-    console.log('Download receipt:', bookingId);
-  };
-
-  const handleMessageHost = (booking) => {
-    // TODO: Navigate to messages with host
-    console.log('Message host for booking:', booking.id);
-  };
-
-  const processPayment = async () => {
-    try {
-      setProcessing(true);
-      
-      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/payment`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentMethod: paymentMethod,
-          amount: selectedBooking.price
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Payment failed');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        await fetchBookings();
-        setPaymentDialogOpen(false);
-        setSelectedBooking(null);
-        setError(null);
-      } else {
-        throw new Error('Payment processing failed');
-      }
-    } catch (err) {
-      console.error('Error processing payment:', err);
-      setError(`Payment failed: ${err.message}`);
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const confirmCancellation = async () => {
-    if (!cancellationReason.trim()) {
-      setError('Please provide a reason for cancellation');
-      return;
-    }
-
-    try {
-      setProcessing(true);
-      const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/cancel`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          reason: cancellationReason
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to cancel booking');
-      }
-
-      const data = await response.json();
-      
-      if (data.success) {
-        await fetchBookings();
-        setCancelDialogOpen(false);
-        setSelectedBooking(null);
-        setCancellationReason('');
-        setError(null);
-        // Show success message
-        alert(data.message || 'Booking cancelled successfully!');
-      } else {
-        throw new Error('Cancellation processing failed');
-      }
-    } catch (err) {
-      console.error('Error cancelling booking:', err);
-      setError(`Cancellation failed: ${err.message}`);
-    } finally {
-      setProcessing(false);
-    }
   };
 
   const getTabCounts = () => {
@@ -528,216 +959,13 @@ export default function BookingsPage() {
                     
                     return (
                 <Grid item xs={12} md={6} lg={4} key={booking.id}>
-                  <Card 
-                    elevation={0}
-                    sx={{ 
-                      height: '100%',
-                      borderRadius: 3,
-                      border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                              boxShadow: `0 12px 40px ${alpha(theme.palette.common.black, 0.1)}`,
-                              borderColor: alpha(theme.palette.primary.main, 0.3),
-                      },
-                    }}
-                  >
-                    {/* Property Image */}
-                          <Box sx={{ position: 'relative', height: 200 }}>
-                            <CardMedia
-                              component="img"
-                              height="200"
-                              image={booking.property.photos?.[0] || '/placeholder-property.jpg'}
-                        alt={booking.property.name}
-                              sx={{ 
-                                objectFit: 'cover',
-                                borderRadius: '12px 12px 0 0',
-                              }}
-                      />
-                      
-                      {/* Status Badge */}
-                            <Chip
-                              label={statusConfig.label}
-                              color={statusConfig.color}
-                              size="small"
-                              icon={<span style={{ fontSize: '0.875rem' }}>{statusConfig.icon}</span>}
-                              sx={{
-                                position: 'absolute',
-                                top: 12,
-                                right: 12,
-                                fontWeight: 600,
-                                backdropFilter: 'blur(10px)',
-                                backgroundColor: alpha(theme.palette[statusConfig.color].main, 0.9),
-                                color: 'white',
-                              }}
-                            />
-
-                            {/* Booking Reference */}
-                        <Chip
-                              label={booking.bookingRef}
-                          size="small"
-                          sx={{
-                                position: 'absolute',
-                                top: 12,
-                                left: 12,
-                                fontWeight: 600,
-                                fontSize: '0.75rem',
-                            backdropFilter: 'blur(10px)',
-                                backgroundColor: alpha(theme.palette.common.black, 0.7),
-                                color: 'white',
-                          }}
-                        />
-                    </Box>
-
-                          <CardContent sx={{ p: 3, height: 'calc(100% - 200px)', display: 'flex', flexDirection: 'column' }}>
-                      {/* Property Name */}
-                      <Typography 
-                        variant="h6" 
-                        fontWeight="bold" 
-                        sx={{ 
-                                mb: 1,
-                          overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                        }}
-                      >
-                        {booking.property.name}
-                      </Typography>
-
-                      {/* Location */}
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 2 }}>
-                        <LocationIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {booking.property.location}
-                        </Typography>
-                      </Box>
-
-                      {/* Dates */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mb: 1 }}>
-                        <CalendarIcon fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDate(booking.startDate)} - {formatDate(booking.endDate)}
-                        </Typography>
-                      </Box>
-
-                            {/* Duration & Guests */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <TimeIcon fontSize="small" color="action" />
-                                <Typography variant="body2" color="text.secondary">
-                                  {nights} night{nights !== 1 ? 's' : ''}
-                                </Typography>
-                              </Box>
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                <PersonIcon fontSize="small" color="action" />
-                                <Typography variant="body2" color="text.secondary">
-                                  {booking.guests} guest{booking.guests !== 1 ? 's' : ''}
-                                </Typography>
-                              </Box>
-                            </Box>
-
-                            {/* Price */}
-                            <Box sx={{ mb: 3 }}>
-                        <Typography variant="h6" fontWeight="bold" color="success.main">
-                                {formatCurrency(booking.price)}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          Total amount
-                        </Typography>
-                      </Box>
-
-                      {/* Action Buttons */}
-                      <Stack direction="row" spacing={1} sx={{ mt: 'auto' }}>
-                              {statusConfig.actions.includes('pay') && (
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  startIcon={<PaymentIcon />}
-                                  onClick={() => handlePayment(booking)}
-                                  sx={{
-                                    borderRadius: 2,
-                                    textTransform: 'none',
-                                    fontWeight: 600,
-                                    flex: 1,
-                                    background: `linear-gradient(45deg, ${theme.palette.success.main}, ${theme.palette.success.dark})`,
-                                  }}
-                                >
-                                  Pay Now
-                                </Button>
-                              )}
-                              
-                              {statusConfig.actions.includes('cancel') && (
-                                <Tooltip title="Cancel Booking">
-                                  <IconButton
-                                    size="small"
-                                    onClick={() => handleCancelBooking(booking)}
-                                    sx={{
-                                      backgroundColor: alpha(theme.palette.error.main, 0.1),
-                                      color: theme.palette.error.main,
-                                      '&:hover': {
-                                        backgroundColor: alpha(theme.palette.error.main, 0.2),
-                                      },
-                                    }}
-                                  >
-                                    <CancelIcon fontSize="small" />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
-
-                        <Tooltip title="View Details">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleViewBooking(booking.id)}
-                            sx={{
-                              backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                              color: theme.palette.primary.main,
-                              '&:hover': {
-                                backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                              },
-                            }}
-                          >
-                            <ViewIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                        
-                              {statusConfig.actions.includes('message') && (
-                                <Tooltip title="Message Host">
-                          <IconButton
-                            size="small"
-                                    onClick={() => handleMessageHost(booking)}
-                            sx={{
-                              backgroundColor: alpha(theme.palette.info.main, 0.1),
-                              color: theme.palette.info.main,
-                              '&:hover': {
-                                backgroundColor: alpha(theme.palette.info.main, 0.2),
-                              },
-                            }}
-                          >
-                            <MessageIcon fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
-                              )}
-
-                              {statusConfig.actions.includes('receipt') && (
-                        <Tooltip title="Download Receipt">
-                          <IconButton
-                            size="small"
-                            onClick={() => handleDownloadReceipt(booking.id)}
-                            sx={{
-                              backgroundColor: alpha(theme.palette.warning.main, 0.1),
-                              color: theme.palette.warning.main,
-                              '&:hover': {
-                                backgroundColor: alpha(theme.palette.warning.main, 0.2),
-                              },
-                            }}
-                          >
-                            <DownloadIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        )}
-                      </Stack>
-                    </CardContent>
-                  </Card>
+                  <BookingCard
+                    booking={booking}
+                    onStatusChange={handleStatusChange}
+                    onViewDetails={handleViewDetails}
+                    onContactGuest={handleContactGuest}
+                    onCancel={handleCancelBooking}
+                  />
                 </Grid>
                     );
                   })}
@@ -895,7 +1123,7 @@ export default function BookingsPage() {
               Keep Booking
             </Button>
             <Button 
-              onClick={confirmCancellation} 
+              onClick={confirmCancelBooking} 
               variant="contained"
               disabled={processing}
               startIcon={processing ? <CircularProgress size={20} /> : <CancelIcon />}
@@ -913,6 +1141,137 @@ export default function BookingsPage() {
               }}
             >
               {processing ? 'Cancelling...' : 'Cancel Booking'}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Booking Details Dialog */}
+        <Dialog
+          open={detailsDialog}
+          onClose={() => setDetailsDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            Booking Details
+            <Typography variant="body2" color="text.secondary">
+              {selectedBooking?.property?.name} • #{selectedBooking?.id?.slice(0, 8)}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            {selectedBooking && (
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Guest Information
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Name</Typography>
+                      <Typography variant="body1">
+                        {selectedBooking.customer?.firstName} {selectedBooking.customer?.lastName}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Email</Typography>
+                      <Typography variant="body1">{selectedBooking.customer?.email}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Phone</Typography>
+                      <Typography variant="body1">
+                        {selectedBooking.customer?.phone || 'Not provided'}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Number of Guests</Typography>
+                      <Typography variant="body1">{selectedBooking.guests}</Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+                <Grid item xs={12} md={6}>
+                  <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                    Booking Information
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Check-in</Typography>
+                      <Typography variant="body1">
+                        {moment(selectedBooking.startDate).format('MMMM DD, YYYY')}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Check-out</Typography>
+                      <Typography variant="body1">
+                        {moment(selectedBooking.endDate).format('MMMM DD, YYYY')}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Total Nights</Typography>
+                      <Typography variant="body1">{selectedBooking.nights}</Typography>
+                    </Box>
+                    <Box>
+                      <Typography variant="body2" color="text.secondary">Total Price</Typography>
+                      <Typography variant="h6" sx={{ color: '#FF385C' }}>
+                        ${selectedBooking.totalPrice?.toLocaleString()}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Grid>
+              </Grid>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDetailsDialog(false)}>Close</Button>
+            {selectedBooking && (
+              <Button
+                variant="contained"
+                startIcon={<MessageIcon />}
+                onClick={() => {
+                  setDetailsDialog(false);
+                  handleContactGuest(selectedBooking);
+                }}
+              >
+                Contact Guest
+              </Button>
+            )}
+          </DialogActions>
+        </Dialog>
+
+        {/* Contact Guest Dialog */}
+        <Dialog
+          open={contactDialog}
+          onClose={() => setContactDialog(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>
+            Contact Guest
+            <Typography variant="body2" color="text.secondary">
+              {selectedBooking?.customer?.firstName} {selectedBooking?.customer?.lastName}
+            </Typography>
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              multiline
+              rows={6}
+              fullWidth
+              label="Message"
+              value={contactMessage}
+              onChange={(e) => setContactMessage(e.target.value)}
+              placeholder="Type your message here..."
+              sx={{ mt: 2 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setContactDialog(false)}>Cancel</Button>
+            <Button
+              variant="contained"
+              onClick={sendMessage}
+              disabled={!contactMessage.trim()}
+              startIcon={<EmailIcon />}
+            >
+              Send Message
             </Button>
           </DialogActions>
         </Dialog>

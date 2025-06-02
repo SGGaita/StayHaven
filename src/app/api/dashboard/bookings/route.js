@@ -33,27 +33,104 @@ export async function GET(req) {
     }
     
     const userId = session.user.id;
+    const userRole = session.user.role;
 
-    // Get user's bookings
-    const bookings = await prisma.booking.findMany({
-      where: {
-        customerId: userId
-      },
-      include: {
-        property: {
-          select: {
-            id: true,
-            name: true,
-            location: true,
-            photos: true,
-            price: true,
+    let bookings;
+
+    if (userRole === 'PROPERTY_MANAGER') {
+      // For property managers, get bookings for their properties
+      bookings = await prisma.booking.findMany({
+        where: {
+          property: {
+            managerId: userId
           }
+        },
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              photos: true,
+              price: true,
+            }
+          },
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
         }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+      });
+    } else if (userRole === 'CUSTOMER') {
+      // For customers, get their own bookings
+      bookings = await prisma.booking.findMany({
+        where: {
+          customerId: userId
+        },
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              photos: true,
+              price: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+    } else if (userRole === 'SUPER_ADMIN' || userRole === 'ADMIN') {
+      // For admins, get all bookings
+      bookings = await prisma.booking.findMany({
+        include: {
+          property: {
+            select: {
+              id: true,
+              name: true,
+              location: true,
+              photos: true,
+              price: true,
+              manager: {
+                select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true,
+                  email: true,
+                }
+              }
+            }
+          },
+          customer: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+    } else {
+      return NextResponse.json(
+        { error: 'Unauthorized access' },
+        { status: 403 }
+      );
+    }
+
+    console.log(`[API][dashboard/bookings] Fetched ${bookings.length} bookings for ${userRole} user ${userId}`);
 
     return NextResponse.json(bookings);
   } catch (error) {

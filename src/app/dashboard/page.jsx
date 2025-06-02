@@ -35,6 +35,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  InputAdornment,
 } from '@mui/material';
 import {
   Apartment as ApartmentIcon,
@@ -348,7 +349,8 @@ export default function Dashboard() {
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('credit_card');
+  const [paymentMethod, setPaymentMethod] = useState('mpesa');
+  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState('');
   const [cancellationReason, setCancellationReason] = useState('');
   const [processing, setProcessing] = useState(false);
 
@@ -576,6 +578,15 @@ export default function Dashboard() {
   const processPayment = async () => {
     if (!selectedBooking) return;
 
+    // Validate M-Pesa phone number
+    if (paymentMethod === 'mpesa') {
+      const phoneRegex = /^254[17]\d{8}$/;
+      if (!mpesaPhoneNumber || !phoneRegex.test(mpesaPhoneNumber)) {
+        alert('Please enter a valid M-Pesa phone number (format: 254XXXXXXXXX)');
+        return;
+      }
+    }
+
     try {
       setProcessing(true);
       const response = await fetch(`/api/dashboard/bookings/${selectedBooking.id}/payment`, {
@@ -587,6 +598,7 @@ export default function Dashboard() {
         body: JSON.stringify({
           paymentMethod,
           amount: selectedBooking.price,
+          phoneNumber: paymentMethod === 'mpesa' ? mpesaPhoneNumber : undefined,
         }),
       });
 
@@ -596,27 +608,99 @@ export default function Dashboard() {
 
       const result = await response.json();
       
-      // Update the booking in the list
-      setRecentBookings(prev => 
-        prev.map(booking => 
-          booking.id === selectedBooking.id 
-            ? { ...booking, status: 'CONFIRMED' }
-            : booking
-        )
-      );
+      if (paymentMethod === 'mpesa' && result.checkoutRequestId) {
+        alert('STK Push sent to your phone. Please check your phone and enter your M-Pesa PIN to complete the payment.');
+        
+        // Poll for payment status
+        pollPaymentStatus(result.checkoutRequestId, selectedBooking.id);
+      } else {
+        // Update the booking in the list for other payment methods
+        setRecentBookings(prev => 
+          prev.map(booking => 
+            booking.id === selectedBooking.id 
+              ? { ...booking, status: 'CONFIRMED' }
+              : booking
+          )
+        );
 
-      setPaymentDialogOpen(false);
-      setSelectedBooking(null);
-      setPaymentMethod('credit_card');
-      
-      // Show success message
-      alert('Payment processed successfully!');
+        setPaymentDialogOpen(false);
+        setSelectedBooking(null);
+        setPaymentMethod('mpesa');
+        setMpesaPhoneNumber('');
+        
+        // Show success message
+        alert('Payment processed successfully!');
+      }
     } catch (error) {
       console.error('Payment error:', error);
       alert('Payment failed. Please try again.');
-    } finally {
       setProcessing(false);
     }
+  };
+
+  const pollPaymentStatus = async (checkoutRequestId, bookingId) => {
+    let attempts = 0;
+    const maxAttempts = 30; // Poll for 5 minutes (10 seconds * 30)
+    
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/payments/mpesa/status`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            checkoutRequestId,
+            bookingId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to check payment status');
+        }
+
+        const result = await response.json();
+        
+        if (result.status === 'COMPLETED') {
+          // Payment successful
+          setRecentBookings(prev => 
+            prev.map(booking => 
+              booking.id === selectedBooking.id 
+                ? { ...booking, status: 'CONFIRMED' }
+                : booking
+            )
+          );
+
+          setPaymentDialogOpen(false);
+          setSelectedBooking(null);
+          setPaymentMethod('mpesa');
+          setMpesaPhoneNumber('');
+          setProcessing(false);
+          
+          alert('Payment completed successfully! Your booking is now confirmed.');
+        } else if (result.status === 'FAILED' || result.status === 'CANCELLED') {
+          // Payment failed or cancelled
+          setProcessing(false);
+          alert('Payment was cancelled or failed. Please try again.');
+        } else if (result.status === 'PENDING' && attempts < maxAttempts) {
+          // Continue polling
+          attempts++;
+          setTimeout(poll, 10000); // Poll every 10 seconds
+        } else {
+          // Timeout
+          setProcessing(false);
+          alert('Payment timeout. Please check your M-Pesa messages or try again.');
+        }
+      } catch (error) {
+        console.error('Error checking payment status:', error);
+        setProcessing(false);
+        alert('Error checking payment status. Please contact support if payment was deducted.');
+      }
+    };
+    
+    // Start polling after 5 seconds
+    setTimeout(poll, 5000);
   };
 
   const processCancellation = async () => {
@@ -1306,12 +1390,32 @@ export default function Dashboard() {
               onChange={(e) => setPaymentMethod(e.target.value)}
               label="Payment Method"
             >
-              <MenuItem value="credit_card">Credit Card</MenuItem>
-              <MenuItem value="debit_card">Debit Card</MenuItem>
-              <MenuItem value="paypal">PayPal</MenuItem>
-              <MenuItem value="bank_transfer">Bank Transfer</MenuItem>
+              <MenuItem value="mpesa">M-Pesa</MenuItem>
+              <MenuItem value="credit_card" disabled>Credit Card (Coming Soon)</MenuItem>
+              <MenuItem value="debit_card" disabled>Debit Card (Coming Soon)</MenuItem>
+              <MenuItem value="paypal" disabled>PayPal (Coming Soon)</MenuItem>
+              <MenuItem value="bank_transfer" disabled>Bank Transfer (Coming Soon)</MenuItem>
             </Select>
           </FormControl>
+
+          {paymentMethod === 'mpesa' && (
+            <TextField
+              fullWidth
+              label="M-Pesa Phone Number"
+              placeholder="254XXXXXXXXX"
+              value={mpesaPhoneNumber}
+              onChange={(e) => setMpesaPhoneNumber(e.target.value)}
+              sx={{ mb: 3 }}
+              helperText="Enter your M-Pesa registered phone number in format: 254XXXXXXXXX"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    🇰🇪 +
+                  </InputAdornment>
+                ),
+              }}
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button 

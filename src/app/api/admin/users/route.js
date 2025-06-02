@@ -1,33 +1,43 @@
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import logger from '@/lib/server-logger';
+import { cookies } from 'next/headers';
 
 // GET handler for fetching users
 export async function GET(request) {
   try {
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
 
-    // Log the token status for debugging
-    logger.authDebug('token-status', 'Authentication token status', {
-      hasToken: !!token,
-      tokenRole: token?.role,
-      tokenId: token?.id,
-    });
-
-    if (!token) {
-      logger.authError('admin-users-access', 'No authentication token found');
+    if (!sessionCookie) {
+      logger.authError('admin-users-access', 'No session cookie found');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    if (!['ADMIN', 'SUPER_ADMIN'].includes(token.role)) {
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      logger.authError('admin-users-access', 'Failed to parse session cookie', { error });
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    if (!session?.user?.id || !session?.user?.role || !session.isAuthenticated) {
+      logger.authError('admin-users-access', 'Invalid session data', { 
+        hasUser: !!session?.user,
+        hasId: !!session?.user?.id,
+        hasRole: !!session?.user?.role,
+        isAuthenticated: !!session?.isAuthenticated
+      });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       logger.authError('unauthorized-access', 'Non-admin access attempt', { 
-        userId: token.id,
-        role: token.role 
+        userId: session.user.id,
+        role: session.user.role 
       });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -42,7 +52,7 @@ export async function GET(request) {
       page,
       limit,
       search,
-      adminId: token.id || 'unknown'
+      adminId: session.user.id
     });
 
     // Calculate skip value for pagination
@@ -91,7 +101,7 @@ export async function GET(request) {
     ]);
 
     logger.adminInfo('users-fetched', 'Users fetched successfully', {
-      adminId: token.id || 'unknown',
+      adminId: session.user.id,
       totalUsers: total,
       fetchedUsers: users.length,
       page,
@@ -123,15 +133,32 @@ export async function GET(request) {
 // POST handler for creating a new user
 export async function POST(request) {
   try {
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
 
-    if (!token || !['ADMIN', 'SUPER_ADMIN'].includes(token.role)) {
+    if (!sessionCookie) {
+      logger.authError('admin-user-create', 'No session cookie found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      logger.authError('admin-user-create', 'Failed to parse session cookie', { error });
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    if (!session?.user?.id || !session?.user?.role || !session.isAuthenticated) {
+      logger.authError('admin-user-create', 'Invalid session data');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       logger.authError('unauthorized-access', 'Unauthorized user creation attempt', {
-        userId: token?.id,
-        role: token?.role
+        userId: session.user.id,
+        role: session.user.role
       });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -139,7 +166,7 @@ export async function POST(request) {
     const data = await request.json();
 
     logger.apiDebug('admin-user-create', 'Creating new user', {
-      adminId: token.id,
+      adminId: session.user.id,
       userData: { ...data, password: undefined }
     });
 
@@ -160,7 +187,7 @@ export async function POST(request) {
     });
 
     logger.adminInfo('user-created', 'New user created successfully', {
-      adminId: token.id,
+      adminId: session.user.id,
       newUserId: user.id,
       userRole: user.role
     });
@@ -181,15 +208,32 @@ export async function POST(request) {
 // PATCH handler for updating a user
 export async function PATCH(request) {
   try {
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
 
-    if (!token || !['ADMIN', 'SUPER_ADMIN'].includes(token.role)) {
+    if (!sessionCookie) {
+      logger.authError('admin-user-update', 'No session cookie found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      logger.authError('admin-user-update', 'Failed to parse session cookie', { error });
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    if (!session?.user?.id || !session?.user?.role || !session.isAuthenticated) {
+      logger.authError('admin-user-update', 'Invalid session data');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       logger.authError('unauthorized-access', 'Unauthorized user update attempt', {
-        userId: token?.id,
-        role: token?.role
+        userId: session.user.id,
+        role: session.user.role
       });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -198,11 +242,12 @@ export async function PATCH(request) {
     const { id, ...updateData } = data;
 
     logger.apiDebug('admin-user-update', 'Updating user', {
-      adminId: token.id,
-      userId: id,
-      updateData: { ...updateData, password: undefined }
+      adminId: session.user.id,
+      targetUserId: id,
+      updateFields: Object.keys(updateData)
     });
 
+    // Hash password if provided
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, 10);
     }
@@ -222,9 +267,9 @@ export async function PATCH(request) {
     });
 
     logger.adminInfo('user-updated', 'User updated successfully', {
-      adminId: token.id,
-      userId: user.id,
-      updatedFields: Object.keys(updateData)
+      adminId: session.user.id,
+      updatedUserId: user.id,
+      updateFields: Object.keys(updateData)
     });
 
     return NextResponse.json(user);
@@ -243,34 +288,58 @@ export async function PATCH(request) {
 // DELETE handler for deleting a user
 export async function DELETE(request) {
   try {
-    const token = await getToken({ 
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
+    // Get the session cookie
+    const cookieStore = cookies();
+    const sessionCookie = cookieStore.get('auth');
 
-    if (!token || !['ADMIN', 'SUPER_ADMIN'].includes(token.role)) {
+    if (!sessionCookie) {
+      logger.authError('admin-user-delete', 'No session cookie found');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    let session;
+    try {
+      session = JSON.parse(decodeURIComponent(sessionCookie.value));
+    } catch (error) {
+      logger.authError('admin-user-delete', 'Failed to parse session cookie', { error });
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    if (!session?.user?.id || !session?.user?.role || !session.isAuthenticated) {
+      logger.authError('admin-user-delete', 'Invalid session data');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!['ADMIN', 'SUPER_ADMIN'].includes(session.user.role)) {
       logger.authError('unauthorized-access', 'Unauthorized user deletion attempt', {
-        userId: token?.id,
-        role: token?.role
+        userId: session.user.id,
+        role: session.user.role
       });
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const url = new URL(request.url);
-    const id = url.searchParams.get('id');
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('id');
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
 
     logger.apiDebug('admin-user-delete', 'Deleting user', {
-      adminId: token.id,
-      userId: id
+      adminId: session.user.id,
+      targetUserId: userId
     });
 
     await prisma.user.delete({
-      where: { id },
+      where: { id: userId },
     });
 
     logger.adminInfo('user-deleted', 'User deleted successfully', {
-      adminId: token.id,
-      deletedUserId: id
+      adminId: session.user.id,
+      deletedUserId: userId
     });
 
     return NextResponse.json({ success: true });

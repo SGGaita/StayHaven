@@ -3,196 +3,241 @@ import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import serverLogger from '@/lib/server-logger';
 
-export async function POST(req, { params }) {
+// M-Pesa Configuration
+const MPESA_CONFIG = {
+  consumerKey: process.env.NEXT_PUBLIC_MPESA_CONSUMER_KEY,
+  consumerSecret: process.env.NEXT_PUBLIC_MPESA_CONSUMER_SECRET,
+  businessShortCode: process.env.NEXT_PUBLIC_MPESA_BUSINESS_SHORTCODE || '174379',
+  passkey: process.env.NEXT_PUBLIC_MPESA_PASSKEY,
+  environment: process.env.NEXT_PUBLIC_MPESA_ENVIRONMENT || 'sandbox', // 'sandbox' or 'production'
+  callbackUrl: process.env.NEXT_PUBLIC_MPESA_CALLBACK_URL || `${process.env.NEXT_PUBLIC_APP_URL}/api/payments/mpesa/callback`,
+};
+
+// Get M-Pesa access token
+async function getMpesaAccessToken() {
+  const auth = Buffer.from(`${MPESA_CONFIG.consumerKey}:${MPESA_CONFIG.consumerSecret}`).toString('base64');
+  
+  const baseUrl = MPESA_CONFIG.environment === 'production' 
+    ? 'https://api.safaricom.co.ke' 
+    : 'https://sandbox.safaricom.co.ke';
+  
+  const response = await fetch(`${baseUrl}/oauth/v1/generate?grant_type=client_credentials`, {
+    headers: {
+      'Authorization': `Basic ${auth}`,
+    },
+  });
+
+  console.log('M-Pesa access token response:', response);
+
+  if (!response.ok) {
+    throw new Error('Failed to get M-Pesa access token');
+  }
+
+  const data = await response.json();
+  return data.access_token;
+}
+
+// Generate M-Pesa password
+function generateMpesaPassword(timestamp) {
+  const data = MPESA_CONFIG.businessShortCode + MPESA_CONFIG.passkey + timestamp;
+  return Buffer.from(data).toString('base64');
+}
+
+// Initiate STK Push
+async function initiateStkPush(phoneNumber, amount, accountReference, transactionDesc) {
+  const accessToken = await getMpesaAccessToken();
+  const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
+  const password = generateMpesaPassword(timestamp);
+  
+  const baseUrl = MPESA_CONFIG.environment === 'production' 
+    ? 'https://api.safaricom.co.ke' 
+    : 'https://sandbox.safaricom.co.ke';
+
+  const stkPushPayload = {
+    BusinessShortCode: MPESA_CONFIG.businessShortCode,
+    Password: password,
+    Timestamp: timestamp,
+    TransactionType: 'CustomerPayBillOnline',
+    Amount: Math.round(1),
+    PartyA: phoneNumber,
+    PartyB: MPESA_CONFIG.businessShortCode,
+    PhoneNumber: phoneNumber,
+    CallBackURL: MPESA_CONFIG.callbackUrl,
+    AccountReference: accountReference,
+    TransactionDesc: transactionDesc,
+  };
+
+  console.log('M-Pesa Config:', {
+    businessShortCode: MPESA_CONFIG.businessShortCode,
+    environment: MPESA_CONFIG.environment,
+    callbackUrl: MPESA_CONFIG.callbackUrl,
+    hasConsumerKey: !!MPESA_CONFIG.consumerKey,
+    hasConsumerSecret: !!MPESA_CONFIG.consumerSecret,
+    hasPasskey: !!MPESA_CONFIG.passkey,
+  });
+
+  console.log('STK Push Payload:', JSON.stringify(stkPushPayload, null, 2));
+
+  const response = await fetch(`${baseUrl}/mpesa/stkpush/v1/processrequest`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(stkPushPayload),
+  });
+
+  console.log('STK Push response status:', response.status);
+  console.log('STK Push response headers:', response.headers);
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    console.log('STK Push error response:', errorData);
+    throw new Error(`STK Push failed: ${errorData.errorMessage || 'Unknown error'}`);
+  }
+
+  return await response.json();
+}
+
+// Authentication helper
+async function authenticateUser(request) {
   try {
-    // Get the session cookie
     const cookieStore = cookies();
-    const sessionCookie = cookieStore.get('auth');
+    const authCookie = cookieStore.get('auth');
     
-    if (!sessionCookie) {
-      return NextResponse.json(
-        { error: 'Unauthorized access' },
-        { status: 401 }
-      );
+    if (!authCookie) {
+      return { error: 'No authentication cookie found', status: 401 };
     }
 
     let session;
     try {
-      session = JSON.parse(decodeURIComponent(sessionCookie.value));
-    } catch (error) {
-      return NextResponse.json(
-        { error: 'Invalid session' },
-        { status: 401 }
-      );
-    }
-    
-    if (!session?.user?.id || !session?.isAuthenticated) {
-      return NextResponse.json(
-        { error: 'Unauthorized access' },
-        { status: 401 }
-      );
-    }
-    
-    const userId = session.user.id;
-    const bookingId = params.id;
-    const body = await req.json();
-    const { paymentMethod, amount } = body;
-
-    serverLogger.apiInfo('payment', 'Processing payment for booking', {
-      userId,
-      bookingId,
-      paymentMethod,
-      amount
-    });
-
-    // Verify the booking belongs to the user and is in PENDING status
-    const existingBooking = await prisma.booking.findFirst({
-      where: {
-        id: bookingId,
-        customerId: userId,
-        status: 'PENDING'
-      },
-      include: {
-        property: {
-          select: {
-            name: true,
-            managerId: true
-          }
-        }
-      }
-    });
-
-    if (!existingBooking) {
-      return NextResponse.json(
-        { error: 'Booking not found or not eligible for payment' },
-        { status: 404 }
-      );
+      session = JSON.parse(authCookie.value);
+    } catch (parseError) {
+      return { error: 'Invalid authentication cookie', status: 401 };
     }
 
-    // Validate payment amount matches booking price
-    if (amount !== existingBooking.price) {
-      return NextResponse.json(
-        { error: 'Payment amount does not match booking price' },
-        { status: 400 }
-      );
+    if (!session?.user?.id || !session.isAuthenticated) {
+      return { error: 'User not authenticated', status: 401 };
     }
 
-    // TODO: Integrate with actual payment processor (Stripe, PayPal, etc.)
-    // For now, we'll simulate a successful payment
-    
-    // Generate a mock transaction ID
-    const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    return { user: session.user };
+  } catch (error) {
+    console.error('Authentication error:', error);
+    return { error: 'Authentication failed', status: 500 };
+  }
+}
 
-    try {
-      // Create payment record
-      const payment = await prisma.payment.create({
-        data: {
-          bookingId: bookingId,
-          amount: amount,
-          method: paymentMethod,
-          status: 'COMPLETED',
-          transactionId: transactionId,
-        }
-      });
+export async function POST(request, { params }) {
+  try {
+    // Validate M-Pesa configuration
+    const missingVars = [];
+    if (!MPESA_CONFIG.consumerKey) missingVars.push('NEXT_PUBLIC_MPESA_CONSUMER_KEY');
+    if (!MPESA_CONFIG.consumerSecret) missingVars.push('NEXT_PUBLIC_MPESA_CONSUMER_SECRET');
+    if (!MPESA_CONFIG.passkey) missingVars.push('NEXT_PUBLIC_MPESA_PASSKEY');
+    if (!MPESA_CONFIG.callbackUrl) missingVars.push('NEXT_PUBLIC_MPESA_CALLBACK_URL or NEXT_PUBLIC_APP_URL');
 
-      // Update booking status to CONFIRMED
-      const updatedBooking = await prisma.booking.update({
-        where: {
-          id: bookingId
-        },
-        data: {
-          status: 'CONFIRMED',
-          updatedAt: new Date()
-        },
-        include: {
-          property: {
-            include: {
-              manager: {
-                select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true,
-                  email: true,
-                }
-              }
-            }
-          },
-          customer: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              email: true,
-            }
-          },
-          payments: true
-        }
-      });
-
-      // Create notification for property manager
-      try {
-        await prisma.notification.create({
-          data: {
-            userId: existingBooking.property.managerId,
-            type: 'BOOKING_CONFIRMED',
-            title: 'New Booking Confirmed',
-            message: `A booking for "${existingBooking.property.name}" has been confirmed with payment.`,
-            data: {
-              bookingId: updatedBooking.id,
-              propertyId: updatedBooking.propertyId,
-              propertyName: existingBooking.property.name,
-              customerName: `${session.user.firstName} ${session.user.lastName}`,
-              amount: amount,
-              transactionId: transactionId,
-            },
-          },
-        });
-      } catch (notificationError) {
-        serverLogger.apiWarn('payment', 'Failed to create notification', { 
-          error: notificationError.message,
-          bookingId,
-          userId
-        });
-        // Continue execution even if notification fails
-      }
-
-      serverLogger.apiInfo('payment', 'Payment processed successfully', {
-        userId,
-        bookingId,
-        transactionId,
-        amount
-      });
-
-      return NextResponse.json({
-        success: true,
-        booking: updatedBooking,
-        payment: payment,
-        transactionId: transactionId
-      });
-
-    } catch (dbError) {
-      serverLogger.apiError('payment', 'Database error during payment processing', {
-        error: dbError.message,
-        stack: dbError.stack,
-        userId,
-        bookingId
-      });
-      
+    if (missingVars.length > 0) {
+      console.error('Missing M-Pesa environment variables:', missingVars);
       return NextResponse.json(
-        { error: 'Payment processing failed' },
+        { error: `Missing required environment variables: ${missingVars.join(', ')}` },
         { status: 500 }
       );
     }
 
-  } catch (error) {
-    serverLogger.apiError('payment', 'Error processing payment', {
-      error: error.message,
-      stack: error.stack,
-      bookingId: params.id
-    });
-    
+    console.log('M-Pesa environment check passed');
+
+    const authResult = await authenticateUser(request);
+    if (authResult.error) {
+      return NextResponse.json(
+        { error: authResult.error },
+        { status: authResult.status }
+      );
+    }
+
+    const { id: bookingId } = params;
+    const body = await request.json();
+    const { paymentMethod, amount, phoneNumber } = body;
+
+    if (!bookingId || !paymentMethod || !amount) {
+      return NextResponse.json(
+        { error: 'Booking ID, payment method, and amount are required' },
+        { status: 400 }
+      );
+    }
+
+    // Handle M-Pesa payments
+    if (paymentMethod === 'mpesa') {
+      if (!phoneNumber) {
+        return NextResponse.json(
+          { error: 'Phone number is required for M-Pesa payments' },
+          { status: 400 }
+        );
+      }
+
+      // Validate phone number format
+      const phoneRegex = /^254[17]\d{8}$/;
+      if (!phoneRegex.test(phoneNumber)) {
+        return NextResponse.json(
+          { error: 'Invalid phone number format. Use 254XXXXXXXXX' },
+          { status: 400 }
+        );
+      }
+
+      try {
+        // TODO: Fetch actual booking details from database
+        const booking = {
+          id: bookingId,
+          propertyName: 'Sample Property',
+          customerName: authResult.user.firstName,
+        };
+
+        const accountReference = `BOOKING-${bookingId}`;
+        const transactionDesc = `Payment for ${booking.propertyName}`;
+
+        // Initiate STK Push
+        const stkResponse = await initiateStkPush(
+          phoneNumber,
+          amount,
+          accountReference,
+          transactionDesc
+        );
+
+        if (stkResponse.ResponseCode === '0') {
+          // STK Push initiated successfully
+          // TODO: Store the CheckoutRequestID in database for later verification
+          
+          return NextResponse.json({
+            success: true,
+            message: 'STK Push sent successfully',
+            checkoutRequestId: stkResponse.CheckoutRequestID,
+            merchantRequestId: stkResponse.MerchantRequestID,
+          });
+        } else {
+          return NextResponse.json(
+            { error: `STK Push failed: ${stkResponse.ResponseDescription}` },
+            { status: 400 }
+          );
+        }
+      } catch (error) {
+        console.error('M-Pesa STK Push error:', error);
+        return NextResponse.json(
+          { error: 'Failed to initiate M-Pesa payment. Please try again.' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Handle other payment methods (placeholder)
+    // TODO: Implement other payment methods
     return NextResponse.json(
-      { error: 'Internal Server Error' },
+      { error: 'Payment method not yet implemented' },
+      { status: 400 }
+    );
+
+  } catch (error) {
+    console.error('Payment processing error:', error);
+    return NextResponse.json(
+      { error: 'Failed to process payment' },
       { status: 500 }
     );
   }
