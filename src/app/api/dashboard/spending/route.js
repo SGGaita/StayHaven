@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import serverLogger from '@/lib/server-logger';
+export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
   try {

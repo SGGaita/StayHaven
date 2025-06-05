@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
-import logger from '@/lib/logger';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function GET(request) {
   try {
@@ -11,17 +14,17 @@ export async function GET(request) {
     });
     
     if (!token) {
-      logger.authWarn('verify-admin', 'No token found in request');
+      console.warn('[AUTH] verify-admin: No token found in request');
       return NextResponse.json({ isAdmin: false }, { status: 401 });
     }
 
-    logger.info('auth', 'Verifying admin status', { userId: token.id });
+    console.info('[AUTH] Verifying admin status for user:', token.id);
 
     // Check if the user has the SUPER_ADMIN role
     const isAdmin = token.role === 'SUPER_ADMIN';
 
     if (!isAdmin) {
-      logger.authWarn('verify-admin', 'Non-admin access attempt', { 
+      console.warn('[AUTH] Non-admin access attempt:', { 
         userId: token.id,
         role: token.role 
       });
@@ -29,7 +32,7 @@ export async function GET(request) {
 
     return NextResponse.json({ isAdmin });
   } catch (error) {
-    logger.error('auth', 'Error verifying admin status', {
+    console.error('[AUTH] Error verifying admin status:', {
       error: error.message,
       stack: error.stack,
     });
@@ -39,4 +42,4 @@ export async function GET(request) {
       { status: 500 }
     );
   }
-} 
+}
