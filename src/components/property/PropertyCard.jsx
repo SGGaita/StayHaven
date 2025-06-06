@@ -64,6 +64,9 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
     status,
   } = property;
 
+  // Process amenities to handle both new and old formats
+  const amenitiesList = typeof amenities === 'object' && amenities.items ? amenities.items : amenities;
+
   useEffect(() => {
     // Reset states when property changes
     setImageLoading(true);
@@ -424,9 +427,9 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
 
           {/* Amenities Section - Fixed Height */}
           <Box sx={{ height: 24, display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
-            {amenities.length > 0 ? (
+            {amenitiesList.length > 0 ? (
               <>
-                {amenities.slice(0, 2).map((amenity) => (
+                {amenitiesList.slice(0, 2).map((amenity) => (
                   <Chip
                     key={amenity}
                     label={amenity}
@@ -444,9 +447,9 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
                     }}
                   />
                 ))}
-                {amenities.length > 2 && (
+                {amenitiesList.length > 2 && (
                   <Chip
-                    label={`+${amenities.length - 2} more`}
+                    label={`+${amenitiesList.length - 2} more`}
                     size="small"
                     variant="outlined"
                     sx={{ 

@@ -212,7 +212,8 @@ export default function FeaturedProperties({ properties = [], loading = false, e
                 key={property.id}
                 xs={12}
                 sm={6}
-                lg={4}
+                md={4}
+                lg={3}
                 variants={itemVariants}
               >
                 <PropertyCard property={property} />

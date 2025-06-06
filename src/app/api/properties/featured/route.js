@@ -43,6 +43,7 @@ export async function GET() {
         avgRating: parseFloat(avgRating.toFixed(1)),
         reviewCount: reviews.length,
         ownerName: `${property.manager.firstName} ${property.manager.lastName}`,
+        coverPhotoIndex: property.coverPhotoIndex || 0,
       };
     });
 
