@@ -18,10 +18,6 @@ import {
   Alert,
   Collapse,
 } from '@mui/material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { PickersDay } from '@mui/x-date-pickers/PickersDay';
 import { addDays, differenceInDays, format, isValid } from 'date-fns';
 import { Person, Star, CheckCircle, CalendarMonth, Groups, CreditCard, CleaningServices, Support, ChevronRight, Login, Close as CloseIcon } from '@mui/icons-material';
 import { bookingService } from '@/services/bookingService';
@@ -29,6 +25,7 @@ import { useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/features/authSlice';
 import LoginModal from '@/components/auth/LoginModal';
+import ClientDatePicker from '@/components/common/ClientDatePicker';
 
 export default function PropertyBooking({ 
   price, 
@@ -357,58 +354,56 @@ export default function PropertyBooking({
         <Divider sx={{ mb: 3 }} />
 
         {/* Booking Form */}
-        <LocalizationProvider dateAdapter={AdapterDateFns}>
-          <Stack spacing={2}>
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <DatePicker
-                label="Check-in"
-                value={checkIn}
-                onChange={(newValue) => handleDateChange('checkIn', newValue)}
-                shouldDisableDate={shouldDisableDate}
-                loading={fetchingDates}
-                minDate={new Date()}
-                sx={{ flex: 1 }}
-                disabled={loading || bookingSuccess}
-                slotProps={{
-                  textField: {
-                    helperText: fetchingDates ? 'Loading availability...' : ''
-                  }
-                }}
-              />
-              <DatePicker
-                label="Check-out"
-                value={checkOut}
-                onChange={(newValue) => handleDateChange('checkOut', newValue)}
-                shouldDisableDate={shouldDisableDate}
-                loading={fetchingDates}
-                minDate={checkIn ? addDays(checkIn, 1) : addDays(new Date(), 1)}
-                sx={{ flex: 1 }}
-                disabled={loading || bookingSuccess || !checkIn}
-                slotProps={{
-                  textField: {
-                    helperText: fetchingDates ? 'Loading availability...' : ''
-                  }
-                }}
-              />
-            </Box>
-
-            <TextField
-              label="Guests"
-              type="number"
-              value={guests}
-              onChange={handleGuestsChange}
+        <Stack spacing={2}>
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <ClientDatePicker
+              label="Check-in"
+              value={checkIn}
+              onChange={(newValue) => handleDateChange('checkIn', newValue)}
+              shouldDisableDate={shouldDisableDate}
+              loading={fetchingDates}
+              minDate={new Date()}
+              sx={{ flex: 1 }}
               disabled={loading || bookingSuccess}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Person />
-                  </InputAdornment>
-                ),
-                inputProps: { min: 1, max: 10 }
+              slotProps={{
+                textField: {
+                  helperText: fetchingDates ? 'Loading availability...' : ''
+                }
               }}
             />
-          </Stack>
-        </LocalizationProvider>
+            <ClientDatePicker
+              label="Check-out"
+              value={checkOut}
+              onChange={(newValue) => handleDateChange('checkOut', newValue)}
+              shouldDisableDate={shouldDisableDate}
+              loading={fetchingDates}
+              minDate={checkIn ? addDays(checkIn, 1) : addDays(new Date(), 1)}
+              sx={{ flex: 1 }}
+              disabled={loading || bookingSuccess || !checkIn}
+              slotProps={{
+                textField: {
+                  helperText: fetchingDates ? 'Loading availability...' : ''
+                }
+              }}
+            />
+          </Box>
+
+          <TextField
+            label="Guests"
+            type="number"
+            value={guests}
+            onChange={handleGuestsChange}
+            disabled={loading || bookingSuccess}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Person />
+                </InputAdornment>
+              ),
+              inputProps: { min: 1, max: 10 }
+            }}
+          />
+        </Stack>
 
         <Button
           variant="contained"

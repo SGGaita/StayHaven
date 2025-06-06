@@ -32,14 +32,12 @@ import {
   Clear,
   NearMe,
 } from '@mui/icons-material';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import ClientDatePicker from '@/components/common/ClientDatePicker';
 import { format, addDays } from 'date-fns';
 import { motion } from 'framer-motion';
 
-const MotionPaper = motion(Paper);
-const MotionBox = motion(Box);
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
 
 // Popular destinations for suggestions
 const popularDestinations = [
@@ -260,111 +258,109 @@ export default function SearchBar() {
           </Box>
 
           {/* Date Pickers */}
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-            <Box sx={{
-              display: 'flex',
-              gap: 2,
-              width: { xs: '100%', md: '45%' },
-            }}>
-              <DatePicker
-                value={checkIn}
-                onChange={(newValue) => {
-                  setCheckIn(newValue);
-                  if (!checkOut && newValue) {
-                    setCheckOut(addDays(newValue, 1));
-                  }
-                }}
-                minDate={new Date()}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    placeholder="Check-in"
-                    onFocus={() => setActiveField('checkIn')}
-                    onBlur={() => setActiveField(null)}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <DateRange color={activeField === 'checkIn' ? 'primary' : 'action'} />
-                        </InputAdornment>
-                      ),
-                      sx: {
-                        borderRadius: '16px',
-                        backgroundColor: activeField === 'checkIn' 
-                          ? alpha(theme.palette.primary.main, 0.04) 
-                          : 'transparent',
-                        border: '2px solid',
-                        borderColor: activeField === 'checkIn' 
-                          ? alpha(theme.palette.primary.main, 0.2) 
-                          : 'transparent',
-                        '&:hover': { 
-                          backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                          borderColor: alpha(theme.palette.primary.main, 0.1),
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          border: 'none',
-                        },
-                        transition: 'all 0.2s ease-in-out',
-                      }
-                    }}
-                    sx={{
-                      '& .MuiInputBase-input': {
-                        fontSize: '1rem',
-                        fontWeight: 500,
+          <Box sx={{
+            display: 'flex',
+            gap: 2,
+            width: { xs: '100%', md: '45%' },
+          }}>
+            <ClientDatePicker
+              value={checkIn}
+              onChange={(newValue) => {
+                setCheckIn(newValue);
+                if (!checkOut && newValue) {
+                  setCheckOut(addDays(newValue, 1));
+                }
+              }}
+              minDate={new Date()}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  fullWidth
+                  placeholder="Check-in"
+                  onFocus={() => setActiveField('checkIn')}
+                  onBlur={() => setActiveField(null)}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <DateRange color={activeField === 'checkIn' ? 'primary' : 'action'} />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      borderRadius: '16px',
+                      backgroundColor: activeField === 'checkIn' 
+                        ? alpha(theme.palette.primary.main, 0.04) 
+                        : 'transparent',
+                      border: '2px solid',
+                      borderColor: activeField === 'checkIn' 
+                        ? alpha(theme.palette.primary.main, 0.2) 
+                        : 'transparent',
+                      '&:hover': { 
+                        backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                        borderColor: alpha(theme.palette.primary.main, 0.1),
                       },
-                    }}
-                  />
-                )}
-              />
-              <DatePicker
-                value={checkOut}
-                onChange={setCheckOut}
-                minDate={checkIn ? addDays(checkIn, 1) : addDays(new Date(), 1)}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    fullWidth
-                    placeholder="Check-out"
-                    onFocus={() => setActiveField('checkOut')}
-                    onBlur={() => setActiveField(null)}
-                    InputProps={{
-                      ...params.InputProps,
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <DateRange color={activeField === 'checkOut' ? 'primary' : 'action'} />
-                        </InputAdornment>
-                      ),
-                      sx: {
-                        borderRadius: '16px',
-                        backgroundColor: activeField === 'checkOut' 
-                          ? alpha(theme.palette.primary.main, 0.04) 
-                          : 'transparent',
-                        border: '2px solid',
-                        borderColor: activeField === 'checkOut' 
-                          ? alpha(theme.palette.primary.main, 0.2) 
-                          : 'transparent',
-                        '&:hover': { 
-                          backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                          borderColor: alpha(theme.palette.primary.main, 0.1),
-                        },
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          border: 'none',
-                        },
-                        transition: 'all 0.2s ease-in-out',
-                      }
-                    }}
-                    sx={{
-                      '& .MuiInputBase-input': {
-                        fontSize: '1rem',
-                        fontWeight: 500,
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        border: 'none',
                       },
-                    }}
-                  />
-                )}
-              />
-            </Box>
-          </LocalizationProvider>
+                      transition: 'all 0.2s ease-in-out',
+                    }
+                  }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
+                  }}
+                />
+              )}
+            />
+            <ClientDatePicker
+              value={checkOut}
+              onChange={setCheckOut}
+              minDate={checkIn ? addDays(checkIn, 1) : addDays(new Date(), 1)}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  fullWidth
+                  placeholder="Check-out"
+                  onFocus={() => setActiveField('checkOut')}
+                  onBlur={() => setActiveField(null)}
+                  InputProps={{
+                    ...params.InputProps,
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <DateRange color={activeField === 'checkOut' ? 'primary' : 'action'} />
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      borderRadius: '16px',
+                      backgroundColor: activeField === 'checkOut' 
+                        ? alpha(theme.palette.primary.main, 0.04) 
+                        : 'transparent',
+                      border: '2px solid',
+                      borderColor: activeField === 'checkOut' 
+                        ? alpha(theme.palette.primary.main, 0.2) 
+                        : 'transparent',
+                      '&:hover': { 
+                        backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                        borderColor: alpha(theme.palette.primary.main, 0.1),
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        border: 'none',
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                    }
+                  }}
+                  sx={{
+                    '& .MuiInputBase-input': {
+                      fontSize: '1rem',
+                      fontWeight: 500,
+                    },
+                  }}
+                />
+              )}
+            />
+          </Box>
 
           {/* Guests Field */}
           <TextField
