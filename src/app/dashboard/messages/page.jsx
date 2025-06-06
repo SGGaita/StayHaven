@@ -34,6 +34,7 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/features/authSlice';
+export const dynamic = 'force-dynamic'
 
 export default function MessagesPage() {
   const router = useRouter();
