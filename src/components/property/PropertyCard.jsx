@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -36,19 +36,19 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import LoginModal from '@/components/auth/LoginModal';
 
-const MotionCard = motion(Card);
+const MotionCard = motion.create(Card);
 
-// Fallback to a colored background if no image is available
-const defaultImage = '/images/properties/villa-1.jpg';
+// Use a placeholder image URL that will always work
+const defaultImage = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80';
 
 export default function PropertyCard({ property, variant = 'default', isLoggedIn = false }) {
   const router = useRouter();
   const [imageLoading, setImageLoading] = useState(true);
   const [isImageError, setIsImageError] = useState(false);
-  const [currentImageUrl, setCurrentImageUrl] = useState('');
   const [isFavorite, setIsFavorite] = useState(false);
   const [shareAnchorEl, setShareAnchorEl] = useState(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const imageRef = useRef(null);
 
   const {
     id,
@@ -67,31 +67,49 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
   // Process amenities to handle both new and old formats
   const amenitiesList = typeof amenities === 'object' && amenities.items ? amenities.items : amenities;
 
+  // Calculate the image URL immediately, not in useEffect
+  const imageUrl = photos && photos.length > 0 
+    ? photos[coverPhotoIndex] || photos[0] || defaultImage
+    : defaultImage;
+
+  // Validate the URL to ensure it's not empty or just the domain
+  const validImageUrl = imageUrl && imageUrl.trim() && imageUrl !== 'http://localhost:3000/' ? imageUrl : defaultImage;
+
   useEffect(() => {
+    // Cleanup previous image loader
+    if (imageRef.current) {
+      imageRef.current.onload = null;
+      imageRef.current.onerror = null;
+      imageRef.current = null;
+    }
+
     // Reset states when property changes
     setImageLoading(true);
     setIsImageError(false);
     
-    // Use the cover photo index to get the selected image
-    const imageUrl = photos && photos.length > 0 
-      ? photos[coverPhotoIndex] || photos[0] || defaultImage
-      : defaultImage;
-    setCurrentImageUrl(imageUrl);
-    
     // Preload image using window.Image to avoid conflicts
-    if (typeof window !== 'undefined') {
-      const img = new window.Image();
-      img.src = imageUrl;
-      img.onload = () => {
+    if (typeof window !== 'undefined' && validImageUrl) {
+      imageRef.current = new window.Image();
+      imageRef.current.onload = () => {
         setImageLoading(false);
       };
-      img.onerror = () => {
-        console.error('Failed to load image:', imageUrl);
+      imageRef.current.onerror = () => {
+        console.error('Failed to load image:', validImageUrl);
         setIsImageError(true);
         setImageLoading(false);
       };
+      imageRef.current.src = validImageUrl;
     }
-  }, [photos, coverPhotoIndex]);
+    
+    // Cleanup on unmount
+    return () => {
+      if (imageRef.current) {
+        imageRef.current.onload = null;
+        imageRef.current.onerror = null;
+        imageRef.current = null;
+      }
+    };
+  }, [validImageUrl, property.id]); // Use validImageUrl and property.id for dependencies
 
   const handleFavoriteClick = (e) => {
     e.preventDefault();
@@ -197,9 +215,9 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
                 Image not available
               </Typography>
             </Box>
-          ) : (
+          ) : validImageUrl ? (
             <Image
-              src={currentImageUrl}
+              src={validImageUrl}
               alt={name}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
@@ -211,7 +229,7 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
               }}
               priority
             />
-          )}
+          ) : null}
 
           <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
             <IconButton

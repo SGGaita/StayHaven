@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 
 const AuthContext = createContext();
@@ -40,7 +40,7 @@ export function AuthProvider({ children }) {
     }
   }, [session]);
 
-  const clearAuth = () => {
+  const clearAuth = useCallback(() => {
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem('auth');
@@ -49,23 +49,28 @@ export function AuthProvider({ children }) {
         console.error('Error clearing auth state:', error);
       }
     }
-  };
+  }, []);
 
-  const updateLastActivity = () => {
-    if (typeof window !== 'undefined' && authState) {
-      const updatedAuth = {
-        ...authState,
-        lastActivity: new Date().toISOString(),
-      };
-      
-      try {
-        localStorage.setItem('auth', JSON.stringify(updatedAuth));
-        setAuthState(updatedAuth);
-      } catch (error) {
-        console.error('Error updating last activity:', error);
-      }
+  const updateLastActivity = useCallback(() => {
+    if (typeof window !== 'undefined') {
+      setAuthState(currentAuthState => {
+        if (!currentAuthState) return currentAuthState;
+        
+        const updatedAuth = {
+          ...currentAuthState,
+          lastActivity: new Date().toISOString(),
+        };
+        
+        try {
+          localStorage.setItem('auth', JSON.stringify(updatedAuth));
+          return updatedAuth;
+        } catch (error) {
+          console.error('Error updating last activity:', error);
+          return currentAuthState;
+        }
+      });
     }
-  };
+  }, []);
 
   return (
     <AuthContext.Provider

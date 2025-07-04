@@ -66,6 +66,41 @@ export async function GET(request) {
 
     serverLogger.apiInfo('dashboard', 'Fetching recent bookings', { userId, userRole });
 
+    // Auto-update booking statuses to COMPLETED for bookings where checkout date has passed
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    
+    try {
+      const updatedBookings = await prisma.booking.updateMany({
+        where: {
+          endDate: {
+            lt: today  // endDate is before today
+          },
+          status: {
+            in: ['CONFIRMED', 'CHECKED_IN', 'ACTIVE'] // Only update bookings that are still active
+          }
+        },
+        data: {
+          status: 'COMPLETED'
+        }
+      });
+
+      if (updatedBookings.count > 0) {
+        serverLogger.apiInfo('dashboard', 'Auto-updated booking statuses', {
+          updatedCount: updatedBookings.count,
+          userId,
+          userRole
+        });
+      }
+    } catch (autoUpdateError) {
+      serverLogger.apiError('dashboard', 'Error auto-updating booking statuses', {
+        error: autoUpdateError.message,
+        userId,
+        userRole
+      });
+      // Continue with fetching bookings even if auto-update fails
+    }
+
     let recentBookings = [];
     
     try {

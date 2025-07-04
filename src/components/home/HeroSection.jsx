@@ -3,8 +3,8 @@ import { Container, Typography, Box, useTheme, alpha } from '@mui/material';
 import { motion } from 'framer-motion';
 import SearchBar from './SearchBar';
 
-const MotionBox = motion(Box);
-const MotionTypography = motion(Typography);
+const MotionBox = motion.create(Box);
+const MotionTypography = motion.create(Typography);
 
 export default function HeroSection() {
   const theme = useTheme();

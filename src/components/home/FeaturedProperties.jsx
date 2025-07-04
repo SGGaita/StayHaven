@@ -4,8 +4,8 @@ import { motion } from 'framer-motion';
 import { ArrowForward, Star } from '@mui/icons-material';
 import PropertyCard from '@/components/property/PropertyCard';
 
-const MotionGrid = motion(Grid);
-const MotionBox = motion(Box);
+const MotionGrid = motion.create(Grid);
+const MotionBox = motion.create(Box);
 
 export default function FeaturedProperties({ properties = [], loading = false, error = null }) {
   const theme = useTheme();

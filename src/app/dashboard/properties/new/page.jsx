@@ -12,12 +12,14 @@ import {
   MenuItem,
   IconButton,
   Card,
+  CardContent,
   CardMedia,
   CardActions,
   Alert,
   Stepper,
   Step,
   StepLabel,
+  StepConnector,
   CircularProgress,
   Checkbox,
   FormControlLabel,
@@ -28,6 +30,14 @@ import {
   Chip,
   InputAdornment,
   Snackbar,
+  LinearProgress,
+  Fade,
+  Slide,
+  Zoom,
+  Tooltip,
+  Avatar,
+  Stack,
+  Skeleton,
 } from '@mui/material';
 import {
   CloudUpload,
@@ -70,7 +80,19 @@ import {
   VolumeOff,
   DoNotStep,
   Warning,
+  ArrowBack,
+  ArrowForward,
+  SwapHoriz,
+  CheckCircle,
+  RadioButtonUnchecked,
+  Info,
+  Home,
+  LocationOn,
+  PhotoCamera,
+  Preview,
+  TrendingUp,
 } from '@mui/icons-material';
+import { styled, alpha, useTheme } from '@mui/material/styles';
 import { useDropzone } from 'react-dropzone';
 import { GoogleMap, LoadScript, Marker, Autocomplete } from '@react-google-maps/api';
 import { Editor } from '@tinymce/tinymce-react';
@@ -78,6 +100,101 @@ import DashboardLayout from '@/components/dashboard/DashboardLayout';
 import { useSelector } from 'react-redux';
 import { selectCurrentUser } from '@/redux/features/authSlice';
 import { useRouter } from 'next/navigation';
+
+// Styled Components for Enhanced UI
+const StyledStepConnector = styled(StepConnector)(({ theme }) => ({
+  [`&.${StepConnector.alternativeLabel}`]: {
+    top: 22,
+  },
+  [`&.${StepConnector.active}`]: {
+    [`& .${StepConnector.line}`]: {
+      background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+      height: 3,
+      border: 0,
+      borderRadius: 1,
+    },
+  },
+  [`&.${StepConnector.completed}`]: {
+    [`& .${StepConnector.line}`]: {
+      background: `linear-gradient(45deg, ${theme.palette.success.main}, ${theme.palette.success.light})`,
+      height: 3,
+      border: 0,
+      borderRadius: 1,
+    },
+  },
+  [`& .${StepConnector.line}`]: {
+    height: 1,
+    border: 0,
+    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[300],
+    borderRadius: 1,
+  },
+}));
+
+const StyledStepIconRoot = styled('div')(({ theme, ownerState }) => ({
+  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[700] : '#ccc',
+  zIndex: 1,
+  color: '#fff',
+  width: 50,
+  height: 50,
+  display: 'flex',
+  borderRadius: '50%',
+  justifyContent: 'center',
+  alignItems: 'center',
+  border: `3px solid ${theme.palette.background.paper}`,
+  boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.2)}`,
+  ...(ownerState.active && {
+    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.primary.light})`,
+    boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.4)}`,
+    transform: 'scale(1.1)',
+    transition: 'all 0.3s ease-in-out',
+  }),
+  ...(ownerState.completed && {
+    background: `linear-gradient(45deg, ${theme.palette.success.main}, ${theme.palette.success.light})`,
+    boxShadow: `0 4px 20px ${alpha(theme.palette.success.main, 0.4)}`,
+  }),
+}));
+
+const StepCard = styled(Card)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.8)}, ${alpha(theme.palette.background.default, 0.9)})`,
+  backdropFilter: 'blur(20px)',
+  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+  borderRadius: 20,
+  boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.08)}`,
+  transition: 'all 0.3s ease-in-out',
+  '&:hover': {
+    transform: 'translateY(-2px)',
+    boxShadow: `0 12px 40px ${alpha(theme.palette.common.black, 0.12)}`,
+  },
+}));
+
+const FormSection = styled(Box)(({ theme }) => ({
+  background: `linear-gradient(135deg, ${alpha(theme.palette.background.paper, 0.9)}, ${alpha(theme.palette.background.default, 0.7)})`,
+  backdropFilter: 'blur(20px)',
+  borderRadius: 16,
+  padding: theme.spacing(2.5),
+  border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+  marginBottom: theme.spacing(2),
+}));
+
+// Step Icons
+const stepIcons = {
+  1: <Home />,
+  2: <LocationOn />,
+  3: <Star />,
+  4: <PhotoCamera />,
+  5: <Preview />,
+};
+
+function StyledStepIcon(props) {
+  const { active, completed, className } = props;
+  const icon = stepIcons[String(props.icon)];
+
+  return (
+    <StyledStepIconRoot ownerState={{ completed, active }} className={className}>
+      {completed ? <CheckCircle /> : icon}
+    </StyledStepIconRoot>
+  );
+}
 
 const propertyTypes = [
   'APARTMENT',
@@ -183,7 +300,33 @@ const houseRules = {
   custom: [], // For user-defined rules
 };
 
-const steps = ['Basic Information', 'Location', 'Amenities & Rules', 'Photos', 'Review'];
+const steps = [
+  { 
+    label: 'Basic Information', 
+    description: 'Property details and pricing',
+    icon: <Home />
+  },
+  { 
+    label: 'Location', 
+    description: 'Set your property location',
+    icon: <LocationOn />
+  },
+  { 
+    label: 'Amenities & Rules', 
+    description: 'What your place offers',
+    icon: <Star />
+  },
+  { 
+    label: 'Photos', 
+    description: 'Showcase your property',
+    icon: <PhotoCamera />
+  },
+  { 
+    label: 'Review', 
+    description: 'Final review and submit',
+    icon: <Preview />
+  }
+];
 
 const validateFormData = (data) => {
   const validations = {
@@ -276,20 +419,18 @@ const NoShoesIcon = DoNotStep;
 const SecurityIcon = Security;
 const WarningIcon = Warning;
 
+// Amenity icons mapping
 const amenityIcons = {
   'Wifi': Wifi,
   'Air conditioning': AcUnit,
-  'Heating': AcUnit,
+  'Heating': LocalFireDepartment,
+  'Hot water': Shower,
   'Washer': LocalLaundryService,
   'Dryer': Dry,
   'Iron': Iron,
   'TV': Tv,
   'Workspace': Computer,
-  'Hair dryer': Bathroom,
-  'Basic toiletries': Bathroom,
-  'Bed linens': KingBed,
-  'Towels': Bathroom,
-  'Hangers': Iron,
+  'Hair dryer': Dry,
   'Private pool': Pool,
   'Hot tub': HotTub,
   'Free parking': LocalParking,
@@ -306,21 +447,14 @@ const amenityIcons = {
   'Ski-in/ski-out': Snowboarding,
   'Full kitchen': Kitchen,
   'Coffee maker': Coffee,
-  'Cooking basics': Kitchen,
-  'Dishes and utensils': Restaurant,
-  'Dining table': Restaurant,
   'Wine glasses': WineBar,
-  'Smoke alarm': Warning,
-  'Carbon monoxide alarm': Warning,
-  'Fire extinguisher': LocalFireDepartment,
-  'First aid kit': Security,
+  'Smoke alarm': Security,
   'Security cameras': Security,
-  'Safe': Security,
   'Step-free entrance': Accessible,
-  'Wide doorways': Accessible,
-  'Accessible bathroom': Accessible,
-  'Ground floor access': Accessible,
   'Elevator': Elevator,
+  'No smoking': SmokeFree,
+  'No pets': Block,
+  'No parties': VolumeOff,
 };
 
 const houseRuleIcons = {
@@ -333,15 +467,16 @@ const houseRuleIcons = {
 };
 
 export default function NewProperty() {
+  const theme = useTheme();
   const router = useRouter();
+  const currentUser = useSelector(selectCurrentUser);
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
   const [openSnackbar, setOpenSnackbar] = useState(false);
-  const [searchBox, setSearchBox] = useState(null);
   const [autocomplete, setAutocomplete] = useState(null);
-  const [validations, setValidations] = useState(null);
+  const [formProgress, setFormProgress] = useState(0);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -378,13 +513,11 @@ export default function NewProperty() {
     transportation: '',
   });
 
-  const user = useSelector(selectCurrentUser);
-
   useEffect(() => {
     if (activeStep === 4) {
-      setValidations(validateFormData(formData));
+      setFormProgress(100);
     }
-  }, [activeStep, formData]);
+  }, [activeStep]);
 
   const onDrop = useCallback((acceptedFiles) => {
     const newPhotos = acceptedFiles.map(file => ({
@@ -444,11 +577,30 @@ export default function NewProperty() {
   };
 
   const handlePhotoDelete = (index) => {
-    setFormData(prev => ({
+    setFormData(prev => {
+      const newPhotos = prev.photos.filter((_, i) => i !== index);
+      let newCoverPhotoIndex = prev.coverPhotoIndex;
+      
+      // Adjust cover photo index when deleting photos
+      if (index === prev.coverPhotoIndex) {
+        // If we're deleting the cover photo, set to first photo (index 0)
+        newCoverPhotoIndex = 0;
+      } else if (index < prev.coverPhotoIndex) {
+        // If we're deleting a photo before the cover photo, decrement the index
+        newCoverPhotoIndex = prev.coverPhotoIndex - 1;
+      }
+      
+      // If no photos left, reset cover index to 0
+      if (newPhotos.length === 0) {
+        newCoverPhotoIndex = 0;
+      }
+      
+      return {
       ...prev,
-      photos: prev.photos.filter((_, i) => i !== index),
-      coverPhotoIndex: prev.coverPhotoIndex === index ? 0 : prev.coverPhotoIndex
-    }));
+        photos: newPhotos,
+        coverPhotoIndex: newCoverPhotoIndex
+      };
+    });
   };
 
   const handleSetCover = (index) => {
@@ -456,6 +608,35 @@ export default function NewProperty() {
       ...prev,
       coverPhotoIndex: index
     }));
+  };
+
+  const handleMovePhoto = (fromIndex, direction) => {
+    setFormData(prev => {
+      const newPhotos = [...prev.photos];
+      const toIndex = direction === 'left' ? fromIndex - 1 : fromIndex + 1;
+      
+      // Check bounds
+      if (toIndex < 0 || toIndex >= newPhotos.length) {
+        return prev;
+      }
+      
+      // Swap photos
+      [newPhotos[fromIndex], newPhotos[toIndex]] = [newPhotos[toIndex], newPhotos[fromIndex]];
+      
+      // Update cover photo index if needed
+      let newCoverPhotoIndex = prev.coverPhotoIndex;
+      if (prev.coverPhotoIndex === fromIndex) {
+        newCoverPhotoIndex = toIndex;
+      } else if (prev.coverPhotoIndex === toIndex) {
+        newCoverPhotoIndex = fromIndex;
+      }
+      
+      return {
+        ...prev,
+        photos: newPhotos,
+        coverPhotoIndex: newCoverPhotoIndex
+      };
+    });
   };
 
   const handleNext = () => {
@@ -554,8 +735,8 @@ export default function NewProperty() {
       data.append('transportation', formData.transportation);
 
       // Add user ID and role to the form data for verification
-      data.append('userId', user?.id || '');
-      data.append('userRole', user?.role || '');
+      data.append('userId', currentUser?.id || '');
+      data.append('userRole', currentUser?.role || '');
 
       const response = await fetch('/api/properties', {
         method: 'POST',
@@ -563,8 +744,8 @@ export default function NewProperty() {
         credentials: 'include',
         headers: {
           // Add authorization header using user info from Redux store
-          'Authorization': `Bearer ${user?.id || ''}`,
-          'X-User-Role': user?.role || ''
+          'Authorization': `Bearer ${currentUser?.id || ''}`,
+          'X-User-Role': currentUser?.role || ''
         }
       });
 
@@ -637,7 +818,23 @@ export default function NewProperty() {
     switch (step) {
       case 0:
         return (
-          <Grid container spacing={3}>
+          <Box>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" fontWeight="600" gutterBottom>
+                Tell us about your property
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Start with the basics - we'll help you create an amazing listing
+              </Typography>
+            </Box>
+
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Home color="primary" />
+                Basic Details
+              </Typography>
+              
+              <Grid container spacing={2}>
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -646,12 +843,240 @@ export default function NewProperty() {
                 value={formData.name}
                 onChange={handleInputChange}
                 required
+                    placeholder="e.g., Cozy Downtown Apartment with City Views"
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                select
+                label="Property Type"
+                name="propertyType"
+                value={formData.propertyType}
+                onChange={handleInputChange}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+              >
+                {propertyTypes.map((type) => (
+                  <MenuItem key={type} value={type}>
+                    {type.charAt(0) + type.slice(1).toLowerCase().replace('_', ' ')}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                type="number"
+                    label="Maximum Guests"
+                    name="maxGuests"
+                    value={formData.maxGuests}
+                onChange={handleInputChange}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                }}
               />
             </Grid>
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" gutterBottom>
-                Short Description
+            </Grid>
+            </FormSection>
+
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <KingBed color="primary" />
+                Sleeping Arrangements
               </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Bedrooms"
+                name="bedrooms"
+                value={formData.bedrooms}
+                onChange={handleInputChange}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+              />
+            </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Beds"
+                name="beds"
+                value={formData.beds}
+                onChange={handleInputChange}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+              />
+            </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+              <TextField
+                fullWidth
+                type="number"
+                label="Bathrooms"
+                name="bathrooms"
+                value={formData.bathrooms}
+                onChange={handleInputChange}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+              />
+            </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Check-in Time
+                    </Typography>
+              <TextField
+                fullWidth
+                      type="time"
+                      name="checkInTime"
+                      value={formData.checkInTime}
+                onChange={handleInputChange}
+                required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                        },
+                      }}
+              />
+                  </Box>
+            </Grid>
+                <Grid item xs={12} sm={6} md={3}>
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      Check-out Time
+                    </Typography>
+              <TextField
+                fullWidth
+                type="time"
+                      name="checkOutTime"
+                      value={formData.checkOutTime}
+                onChange={handleInputChange}
+                required
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                        },
+                      }}
+              />
+                  </Box>
+            </Grid>
+              </Grid>
+            </FormSection>
+
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <TrendingUp color="primary" />
+                Pricing
+              </Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} sm={6} md={4}>
+              <TextField
+                fullWidth
+                    type="number"
+                    label="Base Price per Night"
+                    name="basePrice"
+                    value={formData.basePrice}
+                onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                required
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+              />
+            </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Cleaning Fee"
+                    name="cleaningFee"
+                    value={formData.cleaningFee}
+                    onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+          </Grid>
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    fullWidth
+                    type="number"
+                    label="Security Deposit"
+                    name="securityDeposit"
+                    value={formData.securityDeposit}
+                    onChange={handleInputChange}
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                    }}
+                    sx={{
+                      '& .MuiOutlinedInput-root': {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+              </Grid>
+              
+              {formData.basePrice && (
+                <Box sx={{ 
+                  mt: 2, 
+                  p: 2, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.primary.main, 0.05),
+                  border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                }}>
+                  <Typography variant="body2" color="primary" fontWeight="600">
+                    Total per night: ${calculateTotalPrice(formData.basePrice, formData.cleaningFee, formData.securityDeposit).total.toFixed(2)}
+                  </Typography>
+                </Box>
+              )}
+            </FormSection>
+
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Info color="primary" />
+                Description
+              </Typography>
+              
               <Editor
                 apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
                 value={formData.description}
@@ -671,161 +1096,61 @@ export default function NewProperty() {
                 }}
                 onEditorChange={handleEditorChange('description')}
               />
-              <Typography variant="caption" color="text.secondary">
-                A brief overview of your property (max 200 characters)
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                Help guests understand what makes your place special
               </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                select
-                label="Property Type"
-                name="propertyType"
-                value={formData.propertyType}
-                onChange={handleInputChange}
-                required
-              >
-                {propertyTypes.map((type) => (
-                  <MenuItem key={type} value={type}>
-                    {type.charAt(0) + type.slice(1).toLowerCase().replace('_', ' ')}
-                  </MenuItem>
-                ))}
-              </TextField>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Base Price per Night"
-                name="basePrice"
-                value={formData.basePrice}
-                onChange={handleInputChange}
-                InputProps={{
-                  startAdornment: '$',
-                }}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Cleaning Fee"
-                name="cleaningFee"
-                value={formData.cleaningFee}
-                onChange={handleInputChange}
-                InputProps={{
-                  startAdornment: '$',
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Security Deposit"
-                name="securityDeposit"
-                value={formData.securityDeposit}
-                onChange={handleInputChange}
-                InputProps={{
-                  startAdornment: '$',
-                }}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Bedrooms"
-                name="bedrooms"
-                value={formData.bedrooms}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Beds"
-                name="beds"
-                value={formData.beds}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Bathrooms"
-                name="bathrooms"
-                value={formData.bathrooms}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="number"
-                label="Maximum Guests"
-                name="maxGuests"
-                value={formData.maxGuests}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Check-in Time"
-                name="checkInTime"
-                value={formData.checkInTime}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                type="time"
-                label="Check-out Time"
-                name="checkOutTime"
-                value={formData.checkOutTime}
-                onChange={handleInputChange}
-                required
-              />
-            </Grid>
-          </Grid>
+            </FormSection>
+          </Box>
         );
 
       case 1:
         return (
+          <Box>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" fontWeight="600" gutterBottom>
+                Where is your property located?
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Help guests find your place with an accurate location
+              </Typography>
+            </Box>
+
+            <FormSection>
           <Box sx={{ height: 500, width: '100%' }}>
             <LoadScript
               googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
               libraries={['places']}
             >
-              <Box sx={{ mb: 2 }}>
+                  <Box sx={{ mb: 3 }}>
                 <Autocomplete
                   onLoad={onLoad}
                   onPlaceChanged={onPlaceSelected}
                 >
                   <TextField
                     fullWidth
-                    placeholder="Search for a location..."
+                        placeholder="Search for your property address..."
                     InputProps={{
                       startAdornment: (
                         <InputAdornment position="start">
-                          <Search />
+                              <Search color="primary" />
                         </InputAdornment>
                       ),
                     }}
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                          },
+                        }}
                   />
                 </Autocomplete>
               </Box>
+                  <Paper
+                    sx={{
+                      borderRadius: 3,
+                      overflow: 'hidden',
+                      border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
               <GoogleMap
                 mapContainerStyle={{ height: '400px', width: '100%' }}
                 center={
@@ -834,246 +1159,243 @@ export default function NewProperty() {
                         lat: formData.location.latitude,
                         lng: formData.location.longitude,
                       }
-                    : { lat: 40.7128, lng: -74.0060 } // Default to NYC
+                          : { lat: 40.7128, lng: -74.0060 }
                 }
-                zoom={13}
+                      zoom={formData.location.latitude ? 15 : 10}
                 onClick={handleLocationSelect}
               >
                 {formData.location.latitude && formData.location.longitude && (
                   <Marker
                     position={{
                       lat: formData.location.latitude,
-                      lng: formData.location.longitude
+                            lng: formData.location.longitude,
                     }}
                   />
                 )}
               </GoogleMap>
+                  </Paper>
             </LoadScript>
+              </Box>
+              
             {formData.location.address && (
-              <Typography variant="body2" sx={{ mt: 2 }}>
-                Selected location: {formData.location.address}
+                <Box sx={{ 
+                  mt: 3, 
+                  p: 2, 
+                  borderRadius: 2, 
+                  bgcolor: alpha(theme.palette.success.main, 0.05),
+                  border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                }}>
+                  <Typography variant="body2" color="success.main" fontWeight="600" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckCircle fontSize="small" />
+                    Selected Address: {formData.location.address}
               </Typography>
+                </Box>
             )}
+            </FormSection>
           </Box>
         );
 
       case 2:
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" fontWeight="600" gutterBottom>
+                What does your place offer?
+              </Typography>
+              <Typography variant="body1" color="text.secondary">
+                Select amenities and set house rules for your guests
+              </Typography>
+            </Box>
+
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Star color="primary" />
               Amenities
             </Typography>
-            {Object.entries(amenityCategories).map(([category, { title, items }]) => (
-              <Box key={category} sx={{ mb: 4 }}>
-                <Typography variant="subtitle1" gutterBottom>
-                  {title}
+              
+              {Object.entries(amenityCategories).map(([categoryKey, category]) => (
+                <Box key={categoryKey} sx={{ mb: 3 }}>
+                  <Typography variant="subtitle1" fontWeight="600" gutterBottom color="text.primary">
+                    {category.title}
                 </Typography>
-                <FormGroup>
-                  <Grid container spacing={1}>
-                    {items.map((amenity) => {
-                      const IconComponent = amenityIcons[amenity] || null;
+                  <Grid container spacing={2}>
+                    {category.items.map((amenity) => {
+                      const IconComponent = amenityIcons[amenity];
+                      const isSelected = formData.amenities.includes(amenity);
+                      
                       return (
                         <Grid item xs={12} sm={6} md={4} key={amenity}>
-                          <FormControlLabel
-                            control={
-                              <Checkbox
-                                checked={formData.amenities.includes(amenity)}
-                                onChange={() => handleAmenityToggle(amenity)}
-                              />
-                            }
-                            label={
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                {IconComponent && <IconComponent fontSize="small" />}
-                                {amenity}
+                          <Card
+                            onClick={() => handleAmenityToggle(amenity)}
+                            sx={{
+                              p: 2,
+                              cursor: 'pointer',
+                              borderRadius: 2,
+                              border: `2px solid ${isSelected ? theme.palette.primary.main : alpha(theme.palette.divider, 0.2)}`,
+                              bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : 'background.paper',
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                transform: 'translateY(-2px)',
+                                boxShadow: `0 4px 20px ${alpha(theme.palette.primary.main, 0.2)}`,
+                                borderColor: theme.palette.primary.main,
+                              },
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Box sx={{ 
+                                p: 1, 
+                                borderRadius: 1, 
+                                bgcolor: isSelected ? 'primary.main' : alpha(theme.palette.primary.main, 0.1),
+                                color: isSelected ? 'white' : 'primary.main',
+                              }}>
+                                {IconComponent ? <IconComponent fontSize="small" /> : <Star fontSize="small" />}
                               </Box>
-                            }
-                          />
+                              <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
+                                {amenity}
+                              </Typography>
+                              {isSelected && <CheckCircle color="primary" fontSize="small" sx={{ ml: 'auto' }} />}
+                              </Box>
+                          </Card>
                         </Grid>
                       );
                     })}
                   </Grid>
-                </FormGroup>
               </Box>
             ))}
+            </FormSection>
 
-            <Divider sx={{ my: 4 }} />
-
-            <Typography variant="h6" gutterBottom>
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Security color="primary" />
               House Rules
             </Typography>
-            <FormGroup>
+              
+              <Grid container spacing={2}>
               {houseRules.standard.map((rule) => {
-                const IconComponent = houseRuleIcons[rule] || null;
+                  const isSelected = formData.houseRules.includes(rule);
+                  
                 return (
+                    <Grid item xs={12} sm={6} key={rule}>
                   <FormControlLabel
-                    key={rule}
                     control={
                       <Checkbox
-                        checked={formData.houseRules.includes(rule)}
+                            checked={isSelected}
                         onChange={() => handleRuleToggle(rule)}
+                            sx={{
+                              '&.Mui-checked': {
+                                color: 'primary.main',
+                              },
+                            }}
                       />
                     }
                     label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        {IconComponent && <IconComponent fontSize="small" />}
+                          <Typography variant="body2" fontWeight={isSelected ? 600 : 400}>
                         {rule}
-                      </Box>
-                    }
-                  />
+                          </Typography>
+                        }
+                        sx={{
+                          m: 0,
+                          p: 2,
+                          borderRadius: 2,
+                          border: `1px solid ${isSelected ? theme.palette.primary.main : alpha(theme.palette.divider, 0.2)}`,
+                          bgcolor: isSelected ? alpha(theme.palette.primary.main, 0.05) : 'transparent',
+                          transition: 'all 0.2s ease-in-out',
+                          width: '100%',
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.primary.main, 0.05),
+                            borderColor: theme.palette.primary.main,
+                          },
+                        }}
+                      />
+                    </Grid>
                 );
               })}
-            </FormGroup>
-
-            <Box sx={{ mt: 2 }}>
-              <TextField
-                fullWidth
-                label="Add Custom Rule"
-                placeholder="Enter a custom rule"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleCustomRuleAdd(e.target.value);
-                    e.target.value = '';
-                  }
-                }}
-              />
-            </Box>
-
-            {formData.customRules.length > 0 && (
-              <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {formData.customRules.map((rule, index) => (
-                  <Chip
-                    key={index}
-                    label={rule}
-                    onDelete={() => {
-                      setFormData(prev => ({
-                        ...prev,
-                        customRules: prev.customRules.filter((_, i) => i !== index)
-                      }));
-                    }}
-                  />
-                ))}
-              </Box>
-            )}
-
-            <Divider sx={{ my: 4 }} />
-
-            <Typography variant="h6" gutterBottom>
-              Additional Information
-            </Typography>
-            <Grid container spacing={3}>
-              <Grid item xs={12}>
-                <Typography variant="subtitle1" gutterBottom>
-                  Detailed Description
-                </Typography>
-                <Editor
-                  apiKey={process.env.NEXT_PUBLIC_TINYMCE_API_KEY}
-                  value={formData.description_long}
-                  init={{
-                    height: 400,
-                    menubar: true,
-                    plugins: [
-                      'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-                      'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-                      'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-                      'template'
-                    ],
-                    toolbar: 'undo redo | blocks | ' +
-                      'bold italic forecolor | alignleft aligncenter ' +
-                      'alignright alignjustify | bullist numlist outdent indent | ' +
-                      'removeformat | help',
-                    content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; }',
-                  }}
-                  onEditorChange={handleEditorChange('description_long')}
-                />
-                <Typography variant="caption" color="text.secondary">
-                  Provide a detailed description of your property
-                </Typography>
               </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="The Space"
-                  name="spaceDescription"
-                  value={formData.spaceDescription}
-                  onChange={handleInputChange}
-                  helperText="Describe the spaces guests can use"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Guest Access"
-                  name="guestAccess"
-                  value={formData.guestAccess}
-                  onChange={handleInputChange}
-                  helperText="Explain what guests can access during their stay"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="The Neighborhood"
-                  name="neighborhood"
-                  value={formData.neighborhood}
-                  onChange={handleInputChange}
-                  helperText="Describe the neighborhood and nearby attractions"
-                />
-              </Grid>
-              <Grid item xs={12}>
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={3}
-                  label="Getting Around"
-                  name="transportation"
-                  value={formData.transportation}
-                  onChange={handleInputChange}
-                  helperText="Explain transportation options and parking situation"
-                />
-              </Grid>
-            </Grid>
+            </FormSection>
           </Box>
         );
 
       case 3:
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>
-              Property Photos
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" fontWeight="600" gutterBottom>
+                Add photos of your property
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Upload photos of your property. The first photo marked with a star will be your cover photo.
+              <Typography variant="body1" color="text.secondary">
+                High-quality photos help your listing stand out and attract more guests
             </Typography>
+            </Box>
 
+            <FormSection>
+              {formData.photos.length === 0 ? (
             <Box
               {...getRootProps()}
               sx={{
-                border: '2px dashed',
-                borderColor: 'divider',
-                borderRadius: 2,
-                p: 3,
+                    border: `3px dashed ${alpha(theme.palette.primary.main, 0.3)}`,
+                    borderRadius: 3,
+                    p: 6,
                 textAlign: 'center',
-                mb: 3,
                 cursor: 'pointer',
+                    bgcolor: alpha(theme.palette.primary.main, 0.02),
+                    transition: 'all 0.3s ease-in-out',
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.05),
+                      borderColor: theme.palette.primary.main,
+                      transform: 'translateY(-2px)',
+                    },
               }}
             >
               <input {...getInputProps()} />
-              <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-              <Typography>
-                {isDragActive
-                  ? 'Drop the files here...'
-                  : 'Drag & drop photos here, or click to select files'}
+                  <CloudUpload 
+                    sx={{ 
+                      fontSize: 64, 
+                      color: 'primary.main', 
+                      mb: 2,
+                    }} 
+                  />
+                  <Typography variant="h6" gutterBottom fontWeight="600">
+                    Drop your photos here
               </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                Supported formats: JPEG, JPG, PNG
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                    or click to browse your files
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    Upload high-quality photos (JPG, PNG) • Minimum 5 photos recommended
               </Typography>
+                </Box>
+              ) : (
+                <Box>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="600">
+                      Your Photos ({formData.photos.length})
+                    </Typography>
+                    <Button
+                      {...getRootProps()}
+                      variant="outlined"
+                      startIcon={<CloudUpload />}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      <input {...getInputProps()} />
+                      Add More Photos
+                    </Button>
             </Box>
+
+                  <Alert 
+                    severity="info" 
+                    sx={{ 
+                      mb: 2, 
+                      borderRadius: 2,
+                      '& .MuiAlert-icon': {
+                        color: 'primary.main',
+                      },
+                    }}
+                  >
+                    <Typography variant="body2">
+                      <strong>Photo #{formData.coverPhotoIndex + 1}</strong> is set as your cover photo. 
+                      This will be the main image guests see first.
+                    </Typography>
+                  </Alert>
 
             <Grid container spacing={2}>
               {formData.photos.map((photo, index) => (
@@ -1081,32 +1403,44 @@ export default function NewProperty() {
                   <Card
                     sx={{
                       position: 'relative',
-                      '&:hover .cover-photo-button': {
-                        opacity: 1,
+                            borderRadius: 3,
+                            overflow: 'hidden',
+                            border: index === formData.coverPhotoIndex ? `3px solid ${theme.palette.primary.main}` : `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                            transition: 'all 0.3s ease-in-out',
+                            '&:hover': {
+                              transform: 'translateY(-4px)',
+                              boxShadow: `0 8px 32px ${alpha(theme.palette.common.black, 0.15)}`,
                       },
                     }}
                   >
-                    {formData.coverPhotoIndex === index && (
-                      <Box
+                          {index === formData.coverPhotoIndex && (
+                            <Chip
+                              label="Cover Photo"
+                              color="primary"
+                              size="small"
                         sx={{
                           position: 'absolute',
                           top: 8,
                           left: 8,
                           zIndex: 2,
-                          bgcolor: 'primary.main',
-                          color: 'white',
-                          px: 1,
-                          py: 0.5,
-                          borderRadius: 1,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 0.5,
-                        }}
-                      >
-                        <Star />
-                        <Typography variant="caption">Cover Photo</Typography>
-                      </Box>
-                    )}
+                                fontWeight: 600,
+                              }}
+                            />
+                          )}
+                          
+                          <Chip
+                            label={`#${index + 1}`}
+                            size="small"
+                            sx={{
+                              position: 'absolute',
+                              top: 8,
+                              right: 8,
+                              zIndex: 2,
+                              bgcolor: alpha(theme.palette.common.black, 0.6),
+                              color: 'white',
+                            }}
+                          />
+
                     <CardMedia
                       component="img"
                       height="200"
@@ -1114,67 +1448,96 @@ export default function NewProperty() {
                       alt={`Property photo ${index + 1}`}
                       sx={{ objectFit: 'cover' }}
                     />
-                    <Box
-                      className="cover-photo-button"
+
+                          <CardActions 
                       sx={{
                         position: 'absolute',
                         bottom: 0,
                         left: 0,
                         right: 0,
-                        bgcolor: 'rgba(0, 0, 0, 0.7)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        p: 1,
-                        opacity: formData.coverPhotoIndex === index ? 1 : 0,
-                        transition: 'opacity 0.2s',
-                      }}
-                    >
-                      <Button
+                              background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                              p: 1.5,
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', gap: 1, width: '100%', justifyContent: 'center' }}>
+                              {index !== formData.coverPhotoIndex && (
+                                <Tooltip title="Set as cover photo">
+                                  <IconButton
                         size="small"
-                        startIcon={<Star />}
                         onClick={() => handleSetCover(index)}
                         sx={{
-                          color: formData.coverPhotoIndex === index ? 'primary.main' : 'white',
+                                      bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                      color: 'primary.main',
                           '&:hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                        bgcolor: 'background.paper',
                           },
                         }}
                       >
-                        {formData.coverPhotoIndex === index ? 'Cover Photo' : 'Set as Cover'}
-                      </Button>
+                                    <Star fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              
+                              {index > 0 && (
+                                <Tooltip title="Move left">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleMovePhoto(index, 'left')}
+                                    sx={{
+                                      bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                      color: 'text.primary',
+                                      '&:hover': {
+                                        bgcolor: 'background.paper',
+                                      },
+                                    }}
+                                  >
+                                    <ArrowBack fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              
+                              {index < formData.photos.length - 1 && (
+                                <Tooltip title="Move right">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleMovePhoto(index, 'right')}
+                                    sx={{
+                                      bgcolor: alpha(theme.palette.background.paper, 0.9),
+                                      color: 'text.primary',
+                                      '&:hover': {
+                                        bgcolor: 'background.paper',
+                                      },
+                                    }}
+                                  >
+                                    <ArrowForward fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+                              
+                              <Tooltip title="Delete photo">
                       <IconButton
                         size="small"
                         onClick={() => handlePhotoDelete(index)}
                         sx={{ 
-                          color: 'error.light',
+                                    bgcolor: alpha(theme.palette.error.main, 0.9),
+                                    color: 'white',
                           '&:hover': {
-                            bgcolor: 'rgba(255, 255, 255, 0.1)',
+                                      bgcolor: 'error.main',
                           },
                         }}
                       >
-                        <Delete />
+                                  <Delete fontSize="small" />
                       </IconButton>
+                              </Tooltip>
                     </Box>
+                          </CardActions>
                   </Card>
                 </Grid>
               ))}
             </Grid>
-            
-            {formData.photos.length === 0 && (
-              <Box
-                sx={{
-                  textAlign: 'center',
-                  py: 4,
-                  bgcolor: 'action.hover',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography color="text.secondary">
-                  No photos uploaded yet
-                </Typography>
               </Box>
             )}
+            </FormSection>
           </Box>
         );
 
@@ -1185,128 +1548,179 @@ export default function NewProperty() {
           formData.securityDeposit
         );
 
+        const validations = validateFormData(formData);
+
+        const renderValidationStatus = (section) => {
+          if (!validations || !validations[section]) return null;
+
+          return validations[section].isValid ? (
+            <Chip
+              size="small"
+              color="success"
+              label="Complete"
+              sx={{ ml: 2 }}
+            />
+          ) : (
+            <Chip
+              size="small"
+              color="error"
+              label={`Missing ${validations[section].missingFields.length} items`}
+              sx={{ ml: 2 }}
+            />
+          );
+        };
+
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>
-              Review your property listing
+            <Box sx={{ textAlign: 'center', mb: 4 }}>
+              <Typography variant="h5" fontWeight="600" gutterBottom>
+                Review your listing
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Please review all the information before creating your listing.
+              <Typography variant="body1" color="text.secondary">
+                Take a final look at your property details before publishing
             </Typography>
+            </Box>
 
-            {/* Validation Summary */}
-            <Paper sx={{ p: 3, borderRadius: 2, mb: 4, bgcolor: 'background.default' }}>
-              <Typography variant="h6" gutterBottom>
-                Listing Completion Status
+            {/* Validation Overview */}
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <CheckCircle color="primary" />
+                Listing Completeness
               </Typography>
+              
               <Grid container spacing={2}>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography>Basic Information</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography fontWeight="600">Basic Info</Typography>
                     {renderValidationStatus('basicInfo')}
                   </Box>
-                  {!validations?.basicInfo.isValid && (
+                  {validations && !validations?.basicInfo?.isValid && (
                     <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-                      Missing: {validations?.basicInfo.missingFields.join(', ')}
+                      Missing: {validations?.basicInfo?.missingFields?.join(', ')}
                     </Typography>
                   )}
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography>Location</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography fontWeight="600">Location</Typography>
                     {renderValidationStatus('location')}
                   </Box>
-                  {!validations?.location.isValid && (
+                  {validations && !validations?.location?.isValid && (
                     <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-                      Missing: {validations?.location.missingFields.join(', ')}
+                      Missing: {validations?.location?.missingFields?.join(', ')}
                     </Typography>
                   )}
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography>Amenities</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography fontWeight="600">Amenities</Typography>
                     {renderValidationStatus('amenities')}
                   </Box>
-                  {!validations?.amenities.isValid && (
+                  {validations && !validations?.amenities?.isValid && (
                     <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-                      Missing: {validations?.amenities.missingFields.join(', ')}
+                      Missing: {validations?.amenities?.missingFields?.join(', ')}
                     </Typography>
                   )}
                 </Grid>
                 <Grid item xs={12} sm={6} md={3}>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <Typography>Photos</Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography fontWeight="600">Photos</Typography>
                     {renderValidationStatus('photos')}
                   </Box>
-                  {!validations?.photos.isValid && (
+                  {validations && !validations?.photos?.isValid && (
                     <Typography variant="caption" color="error.main" sx={{ mt: 1, display: 'block' }}>
-                      Missing: {validations?.photos.missingFields.join(', ')}
+                      Missing: {validations?.photos?.missingFields?.join(', ')}
                     </Typography>
                   )}
                 </Grid>
               </Grid>
-            </Paper>
+            </FormSection>
 
             {/* Price Summary */}
-            <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
-              <Typography variant="h6" gutterBottom>
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <TrendingUp color="primary" />
                 Price Summary
               </Typography>
+              
               <Grid container spacing={2}>
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
-                    <Typography variant="subtitle2" gutterBottom>
+                  <Box sx={{ 
+                    p: 2.5, 
+                    borderRadius: 2, 
+                    bgcolor: alpha(theme.palette.primary.main, 0.05),
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                  }}>
+                    <Typography variant="subtitle1" fontWeight="600" gutterBottom>
                       Nightly Breakdown
                     </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Stack spacing={1}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography>Base price</Typography>
-                      <Typography>${priceCalculation.subtotal}</Typography>
+                        <Typography fontWeight="600">${priceCalculation.subtotal}</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography>Cleaning fee</Typography>
                       <Typography>${priceCalculation.cleaning}</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography>Service fee (12%)</Typography>
                       <Typography>${priceCalculation.serviceFee.toFixed(2)}</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography>Tax (8%)</Typography>
                       <Typography>${priceCalculation.tax.toFixed(2)}</Typography>
                     </Box>
-                    <Divider sx={{ my: 1 }} />
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-                      <Typography>Total (per night)</Typography>
-                      <Typography>${priceCalculation.total.toFixed(2)}</Typography>
+                      <Divider />
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Typography variant="h6" fontWeight="bold">Total per night</Typography>
+                        <Typography variant="h6" fontWeight="bold" color="primary.main">
+                          ${priceCalculation.total.toFixed(2)}
+                        </Typography>
                     </Box>
+                    </Stack>
                   </Box>
                 </Grid>
                 <Grid item xs={12} md={6}>
-                  <Box sx={{ bgcolor: 'background.default', p: 2, borderRadius: 1 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Additional Fees
+                  <Box sx={{ 
+                    p: 2.5, 
+                    borderRadius: 2, 
+                    bgcolor: alpha(theme.palette.secondary.main, 0.05),
+                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                  }}>
+                    <Typography variant="subtitle1" fontWeight="600" gutterBottom>
+                      Additional Information
                     </Typography>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                    <Stack spacing={1}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography>Security deposit</Typography>
-                      <Typography>${priceCalculation.deposit}</Typography>
+                        <Typography fontWeight="600">${priceCalculation.deposit}</Typography>
                     </Box>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                      <Typography variant="caption" color="text.secondary">
                       Security deposit is refundable after checkout if no damages are reported.
                     </Typography>
+                    </Stack>
                   </Box>
                 </Grid>
               </Grid>
-            </Paper>
+            </FormSection>
 
             {/* Guest Preview */}
-            <Paper sx={{ p: 3, borderRadius: 2, mb: 4 }}>
-              <Typography variant="h6" gutterBottom>
+            <FormSection>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <Preview color="primary" />
                 Guest Preview
               </Typography>
-              <Box sx={{ bgcolor: 'background.default', borderRadius: 2, overflow: 'hidden' }}>
+              
+              <Box sx={{ 
+                borderRadius: 3, 
+                overflow: 'hidden',
+                border: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                bgcolor: 'background.paper',
+              }}>
                 {/* Cover Photo */}
-                <Box sx={{ position: 'relative', height: 300 }}>
                   {formData.photos[formData.coverPhotoIndex] && (
+                  <Box sx={{ position: 'relative', height: 300 }}>
                     <Box
                       component="img"
                       src={formData.photos[formData.coverPhotoIndex].preview}
@@ -1317,205 +1731,375 @@ export default function NewProperty() {
                         objectFit: 'cover',
                       }}
                     />
-                  )}
-                </Box>
-                
-                <Box sx={{ p: 3 }}>
-                  <Typography variant="h5" gutterBottom>
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
+                        p: 3,
+                      }}
+                    >
+                      <Typography variant="h4" color="white" fontWeight="bold">
                     {formData.name}
                   </Typography>
-                  
-                  <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-                    <Typography color="text.secondary">
+                      <Typography variant="body1" color="white" sx={{ opacity: 0.9 }}>
                       {formData.location.address}
                     </Typography>
                   </Box>
+                  </Box>
+                )}
 
-                  <Grid container spacing={2} sx={{ mb: 3 }}>
+                <Box sx={{ p: 3 }}>
+                  <Grid container spacing={2} sx={{ mb: 2 }}>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Guests
                       </Typography>
-                      <Typography>{formData.maxGuests}</Typography>
+                      <Typography variant="h6" fontWeight="600">{formData.maxGuests}</Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Bedrooms
                       </Typography>
-                      <Typography>{formData.bedrooms}</Typography>
+                      <Typography variant="h6" fontWeight="600">{formData.bedrooms}</Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Beds
                       </Typography>
-                      <Typography>{formData.beds}</Typography>
+                      <Typography variant="h6" fontWeight="600">{formData.beds}</Typography>
                     </Grid>
                     <Grid item xs={6} sm={3}>
-                      <Typography variant="body2" color="text.secondary">
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
                         Bathrooms
                       </Typography>
-                      <Typography>{formData.bathrooms}</Typography>
+                      <Typography variant="h6" fontWeight="600">{formData.bathrooms}</Typography>
                     </Grid>
                   </Grid>
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" fontWeight="600" gutterBottom>
                     About this space
                   </Typography>
-                  <Typography paragraph>
-                    {formData.description}
-                  </Typography>
+                  <Typography 
+                    paragraph 
+                    color="text.secondary"
+                    dangerouslySetInnerHTML={{ __html: formData.description }}
+                  />
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Typography variant="h6" gutterBottom>
+                  <Typography variant="h6" fontWeight="600" gutterBottom>
                     What this place offers
                   </Typography>
-                  <Grid container spacing={1}>
-                    {formData.amenities.slice(0, 8).map((amenity) => {
-                      const IconComponent = amenityIcons[amenity] || null;
+                  <Grid container spacing={2}>
+                    {formData.amenities.slice(0, 12).map((amenity) => {
+                      const IconComponent = amenityIcons[amenity];
                       return (
                         <Grid item xs={12} sm={6} md={4} key={amenity}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            {IconComponent && <IconComponent fontSize="small" color="primary" />}
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1 }}>
+                            <Box sx={{ 
+                              p: 0.5, 
+                              borderRadius: 1, 
+                              bgcolor: alpha(theme.palette.primary.main, 0.1),
+                              color: 'primary.main',
+                            }}>
+                              {IconComponent ? <IconComponent fontSize="small" /> : <Star fontSize="small" />}
+                            </Box>
                             <Typography variant="body2">{amenity}</Typography>
                           </Box>
                         </Grid>
                       );
                     })}
-                    {formData.amenities.length > 8 && (
+                    {formData.amenities.length > 12 && (
                       <Grid item xs={12}>
-                        <Button variant="text">
-                          Show all {formData.amenities.length} amenities
-                        </Button>
+                        <Typography variant="body2" color="text.secondary">
+                          + {formData.amenities.length - 12} more amenities
+                        </Typography>
                       </Grid>
                     )}
                   </Grid>
+
+                  {formData.houseRules.length > 0 && (
+                    <>
+                      <Divider sx={{ my: 2 }} />
+                      <Typography variant="h6" fontWeight="600" gutterBottom>
+                        House Rules
+                      </Typography>
+                      <Stack spacing={1}>
+                        {formData.houseRules.map((rule) => (
+                          <Typography key={rule} variant="body2" color="text.secondary">
+                            • {rule}
+                          </Typography>
+                        ))}
+                      </Stack>
+                    </>
+                  )}
                 </Box>
               </Box>
-            </Paper>
-
-            {/* Existing sections */}
-            <Grid container spacing={4}>
-              {/* ... existing review sections ... */}
-            </Grid>
+            </FormSection>
           </Box>
         );
 
       default:
-        return null;
+        return (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography>Step content for step {step + 1}</Typography>
+          </Box>
+        );
     }
   };
 
-  const renderValidationStatus = (section) => {
-    if (!validations || !validations[section]) return null;
+  return (
+    <DashboardLayout>
+      <Box
+        sx={{
+          background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.02)}, ${alpha(theme.palette.secondary.main, 0.02)})`,
+          minHeight: '100vh',
+          py: 4,
+        }}
+      >
+        <Container maxWidth="lg">
+          {/* Header Section */}
+          <Box sx={{ textAlign: 'center', mb: 6 }}>
+            <Typography
+              variant="h3"
+              component="h1"
+              sx={{
+                fontWeight: 800,
+                mb: 2,
+                background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                backgroundClip: 'text',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              {success ? 'Property Created Successfully! 🎉' : 'List Your Property'}
+            </Typography>
+            <Typography
+              variant="h6"
+              color="text.secondary"
+              sx={{ maxWidth: 600, mx: 'auto' }}
+            >
+              {success 
+                ? 'Your property has been submitted and is pending approval' 
+                : 'Share your space with travelers from around the world'
+              }
+            </Typography>
+          </Box>
 
-    return validations[section].isValid ? (
-      <Chip
-        size="small"
-        color="success"
-        label="Complete"
-        sx={{ ml: 2 }}
-      />
-    ) : (
-      <Chip
-        size="small"
-        color="error"
-        label={`Missing ${validations[section].missingFields.length} items`}
-        sx={{ ml: 2 }}
-      />
-    );
-  };
+          {error && (
+            <Fade in={!!error}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 4, 
+                  borderRadius: 3,
+                  boxShadow: `0 4px 20px ${alpha(theme.palette.error.main, 0.2)}`,
+                }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            </Fade>
+          )}
 
-  const SuccessView = () => (
-    <Box sx={{ textAlign: 'center', py: 6 }}>
-      <Typography variant="h4" gutterBottom color="success.main">
+          {success ? (
+            <Zoom in={success}>
+              <StepCard sx={{ p: 6, textAlign: 'center', maxWidth: 600, mx: 'auto' }}>
+                <Box sx={{ mb: 4 }}>
+                  <Avatar
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      mx: 'auto',
+                      mb: 3,
+                      bgcolor: 'success.main',
+                      fontSize: '2rem',
+                    }}
+                  >
+                    ✓
+                  </Avatar>
+                  <Typography variant="h4" gutterBottom color="success.main" fontWeight="bold">
         Property Created Successfully!
       </Typography>
-      <Typography variant="body1" sx={{ mb: 4 }}>
-        Your property has been submitted and is pending approval.
+                  <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
+                    Your property has been submitted and is pending approval. You'll receive an email notification once it's reviewed.
       </Typography>
+                </Box>
       
-      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, mt: 4 }}>
+                <Stack direction="row" spacing={2} justifyContent="center">
         <Button 
           variant="outlined" 
           size="large"
+                    startIcon={<TrendingUp />}
           onClick={() => router.push('/dashboard/properties')}
+                    sx={{ borderRadius: 3 }}
         >
           View My Properties
         </Button>
         <Button 
           variant="contained" 
           size="large"
+                    startIcon={<Home />}
           onClick={() => {
             setSuccess(false);
             resetForm();
           }}
+                    sx={{ borderRadius: 3 }}
         >
           Add Another Property
         </Button>
-      </Box>
-    </Box>
-  );
-
-  return (
-    <DashboardLayout>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Paper sx={{ p: 4 }}>
-          <Typography variant="h4" gutterBottom>
-            {success ? 'Property Created' : 'List a New Property'}
-          </Typography>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
-          {success ? (
-            <SuccessView />
+                </Stack>
+              </StepCard>
+            </Zoom>
           ) : (
-            <>
-              <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                {steps.map((label) => (
-                  <Step key={label}>
-                    <StepLabel>{label}</StepLabel>
+            <StepCard sx={{ overflow: 'hidden' }}>
+              {/* Progress Bar */}
+              <Box sx={{ p: 3, pb: 0 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" fontWeight="600">
+                    Step {activeStep + 1} of {steps.length}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {Math.round(((activeStep + 1) / steps.length) * 100)}% Complete
+                  </Typography>
+      </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={((activeStep + 1) / steps.length) * 100}
+                  sx={{
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    '& .MuiLinearProgress-bar': {
+                      borderRadius: 4,
+                      background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    },
+                  }}
+                />
+    </Box>
+
+              {/* Enhanced Stepper */}
+              <Box sx={{ p: 3 }}>
+                <Stepper 
+                  activeStep={activeStep} 
+                  connector={<StyledStepConnector />}
+                  alternativeLabel
+                  sx={{ mb: 4 }}
+                >
+                  {steps.map((step, index) => (
+                    <Step key={step.label}>
+                      <StepLabel 
+                        StepIconComponent={StyledStepIcon}
+                        sx={{
+                          '& .MuiStepLabel-label': {
+                            fontSize: '0.9rem',
+                            fontWeight: activeStep === index ? 600 : 400,
+                            color: activeStep === index ? 'primary.main' : 'text.secondary',
+                          },
+                        }}
+                      >
+                        <Box>
+                          <Typography variant="body2" fontWeight={activeStep === index ? 600 : 400}>
+                            {step.label}
+          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {step.description}
+                          </Typography>
+                        </Box>
+                      </StepLabel>
                   </Step>
                 ))}
               </Stepper>
 
-              <Box sx={{ mt: 4 }}>
+                {/* Step Content with Animation */}
+                <Fade in={true} key={activeStep}>
+                  <Box>
                 {renderStepContent(activeStep)}
+                  </Box>
+                </Fade>
 
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4, gap: 2 }}>
-                  {activeStep > 0 && (
-                    <Button onClick={handleBack}>
+                {/* Navigation Buttons */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  mt: 6,
+                  pt: 3,
+                  borderTop: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                }}>
+                  <Button
+                    onClick={handleBack}
+                    disabled={activeStep === 0}
+                    startIcon={<ArrowBack />}
+                    sx={{ 
+                      borderRadius: 3,
+                      visibility: activeStep === 0 ? 'hidden' : 'visible',
+                    }}
+                  >
                       Back
                     </Button>
-                  )}
+
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    {/* Step Indicators */}
+                    <Stack direction="row" spacing={1}>
+                      {steps.map((_, index) => (
+                        <Box
+                          key={index}
+                          sx={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: '50%',
+                            bgcolor: index <= activeStep ? 'primary.main' : alpha(theme.palette.primary.main, 0.2),
+                            transition: 'all 0.3s ease-in-out',
+                          }}
+                        />
+                      ))}
+                    </Stack>
+
                   {activeStep === steps.length - 1 ? (
                     <Button
                       variant="contained"
+                        size="large"
                       onClick={handleSubmit}
                       disabled={loading}
-                    >
-                      {loading ? <CircularProgress size={24} /> : 'Create Property'}
+                        endIcon={loading ? <CircularProgress size={20} color="inherit" /> : <CheckCircle />}
+                        sx={{ 
+                          borderRadius: 3,
+                          minWidth: 160,
+                          background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                          '&:hover': {
+                            background: `linear-gradient(45deg, ${theme.palette.primary.dark}, ${theme.palette.secondary.dark})`,
+                          },
+                        }}
+                      >
+                        {loading ? 'Creating...' : 'Create Property'}
                     </Button>
                   ) : (
                     <Button
                       variant="contained"
+                        size="large"
                       onClick={handleNext}
+                        endIcon={<ArrowForward />}
+                        sx={{ 
+                          borderRadius: 3,
+                          minWidth: 120,
+                        }}
                     >
                       Next
                     </Button>
                   )}
                 </Box>
               </Box>
-            </>
+              </Box>
+            </StepCard>
           )}
-        </Paper>
       </Container>
+      </Box>
 
       <Snackbar
         open={openSnackbar}
@@ -1526,7 +2110,11 @@ export default function NewProperty() {
         <Alert 
           onClose={handleSnackbarClose} 
           severity="success" 
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 3,
+            boxShadow: `0 4px 20px ${alpha(theme.palette.success.main, 0.3)}`,
+          }}
           variant="filled"
         >
           Property created successfully!

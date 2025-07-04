@@ -29,8 +29,8 @@ const categories = [
   }
 ];
 
-const MotionPaper = motion(Paper);
-const MotionBox = motion(Box);
+const MotionPaper = motion.create(Paper);
+const MotionBox = motion.create(Box);
 
 export default function CategorySection() {
   const theme = useTheme();

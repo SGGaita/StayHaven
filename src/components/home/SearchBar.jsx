@@ -272,15 +272,13 @@ export default function SearchBar() {
                 }
               }}
               minDate={new Date()}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  placeholder="Check-in"
-                  onFocus={() => setActiveField('checkIn')}
-                  onBlur={() => setActiveField(null)}
-                  InputProps={{
-                    ...params.InputProps,
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  placeholder: "Check-in",
+                  onFocus: () => setActiveField('checkIn'),
+                  onBlur: () => setActiveField(null),
+                  InputProps: {
                     startAdornment: (
                       <InputAdornment position="start">
                         <DateRange color={activeField === 'checkIn' ? 'primary' : 'action'} />
@@ -304,29 +302,27 @@ export default function SearchBar() {
                       },
                       transition: 'all 0.2s ease-in-out',
                     }
-                  }}
-                  sx={{
+                  },
+                  sx: {
                     '& .MuiInputBase-input': {
                       fontSize: '1rem',
                       fontWeight: 500,
                     },
-                  }}
-                />
-              )}
+                  }
+                }
+              }}
             />
             <ClientDatePicker
               value={checkOut}
               onChange={setCheckOut}
               minDate={checkIn ? addDays(checkIn, 1) : addDays(new Date(), 1)}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  fullWidth
-                  placeholder="Check-out"
-                  onFocus={() => setActiveField('checkOut')}
-                  onBlur={() => setActiveField(null)}
-                  InputProps={{
-                    ...params.InputProps,
+              slotProps={{
+                textField: {
+                  fullWidth: true,
+                  placeholder: "Check-out",
+                  onFocus: () => setActiveField('checkOut'),
+                  onBlur: () => setActiveField(null),
+                  InputProps: {
                     startAdornment: (
                       <InputAdornment position="start">
                         <DateRange color={activeField === 'checkOut' ? 'primary' : 'action'} />
@@ -350,15 +346,15 @@ export default function SearchBar() {
                       },
                       transition: 'all 0.2s ease-in-out',
                     }
-                  }}
-                  sx={{
+                  },
+                  sx: {
                     '& .MuiInputBase-input': {
                       fontSize: '1rem',
                       fontWeight: 500,
                     },
-                  }}
-                />
-              )}
+                  }
+                }
+              }}
             />
           </Box>
 

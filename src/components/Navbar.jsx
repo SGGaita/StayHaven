@@ -36,10 +36,16 @@ import UserAvatar from '@/components/UserAvatar';
 
 export default function Navbar() {
   const [anchorEl, setAnchorEl] = useState(null);
+  const [mounted, setMounted] = useState(false);
   const dispatch = useDispatch();
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const user = useSelector(selectCurrentUser);
   const theme = useTheme();
+
+  // Prevent hydration mismatch by only showing auth-dependent content after mounting
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleMenu = (event) => {
     setAnchorEl(event.currentTarget);
@@ -81,16 +87,18 @@ export default function Navbar() {
             alignItems: 'center',
             mr: { xs: 2, md: 4 }
           }}>
-            <Link 
-              href="/" 
-              style={{ 
+            <Box
+              component={Link}
+              href="/"
+              sx={{
                 textDecoration: 'none', 
                 display: 'flex', 
                 alignItems: 'center',
                 transition: 'transform 0.2s ease-in-out',
+                '&:hover': {
+                  transform: 'scale(1.05)'
+                }
               }}
-              onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
-              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
             >
               <Box
                 sx={{
@@ -119,7 +127,7 @@ export default function Navbar() {
               >
                 StayHaven
               </Typography>
-            </Link>
+            </Box>
           </Box>
 
           {/* Navigation Links */}
@@ -129,84 +137,96 @@ export default function Navbar() {
             justifyContent: 'center',
             gap: 1,
           }}>
-            <Button
+            <Box
               component={Link}
               href="/properties"
-              startIcon={<BookOnline />}
-              sx={{ 
-                mx: 1,
-                px: 3,
-                py: 1,
-                borderRadius: '12px',
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '0.95rem',
-                color: 'text.primary',
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                  transform: 'translateY(-1px)',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                }
-              }}
+              sx={{ textDecoration: 'none' }}
             >
-              Properties
-            </Button>
-            {isAuthenticated && (
+              <Button
+                startIcon={<BookOnline />}
+                sx={{ 
+                  mx: 1,
+                  px: 3,
+                  py: 1,
+                  borderRadius: '12px',
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  color: 'text.primary',
+                  transition: 'all 0.2s ease-in-out',
+                  '&:hover': {
+                    backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                    transform: 'translateY(-1px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  }
+                }}
+              >
+                Properties
+              </Button>
+            </Box>
+            {mounted && isAuthenticated && (
               <>
-                <Button
+                <Box
                   component={Link}
                   href="/dashboard/favorites"
-                  startIcon={<Favorite />}
-                  sx={{ 
-                    mx: 1,
-                    px: 3,
-                    py: 1,
-                    borderRadius: '12px',
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    color: 'text.primary',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }
-                  }}
+                  sx={{ textDecoration: 'none' }}
                 >
-                  Favorites
-                </Button>
-                <Button
+                  <Button
+                    startIcon={<Favorite />}
+                    sx={{ 
+                      mx: 1,
+                      px: 3,
+                      py: 1,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      color: 'text.primary',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }
+                    }}
+                  >
+                    Favorites
+                  </Button>
+                </Box>
+                <Box
                   component={Link}
                   href="/bookings"
-                  startIcon={<BookOnline />}
-                  sx={{ 
-                    mx: 1,
-                    px: 3,
-                    py: 1,
-                    borderRadius: '12px',
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '0.95rem',
-                    color: 'text.primary',
-                    transition: 'all 0.2s ease-in-out',
-                    '&:hover': {
-                      backgroundColor: alpha(theme.palette.primary.main, 0.08),
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    }
-                  }}
+                  sx={{ textDecoration: 'none' }}
                 >
-                  My Bookings
-                </Button>
+                  <Button
+                    startIcon={<BookOnline />}
+                    sx={{ 
+                      mx: 1,
+                      px: 3,
+                      py: 1,
+                      borderRadius: '12px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      fontSize: '0.95rem',
+                      color: 'text.primary',
+                      transition: 'all 0.2s ease-in-out',
+                      '&:hover': {
+                        backgroundColor: alpha(theme.palette.primary.main, 0.08),
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                      }
+                    }}
+                  >
+                    My Bookings
+                  </Button>
+                </Box>
               </>
             )}
           </Box>
 
           {/* User Section */}
           <Box sx={{ flexGrow: 0, display: 'flex', alignItems: 'center', gap: 2 }}>
-            {isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <>
                 {/* User Role Badge */}
                 {user?.role === 'PROPERTY_MANAGER' && (
@@ -344,7 +364,7 @@ export default function Navbar() {
                   </MenuItem>
                 </Menu>
               </>
-            ) : (
+            ) : mounted ? (
               <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center' }}>
                 <Button
                   component={Link}
@@ -388,7 +408,7 @@ export default function Navbar() {
                   Sign up
                 </Button>
               </Box>
-            )}
+            ) : null}
           </Box>
         </Toolbar>
       </Container>

@@ -24,8 +24,8 @@ const features = [
   }
 ];
 
-const MotionBox = motion(Box);
-const MotionPaper = motion(Paper);
+const MotionBox = motion.create(Box);
+const MotionPaper = motion.create(Paper);
 
 export default function TrustSection() {
   const theme = useTheme();
@@ -79,7 +79,7 @@ export default function TrustSection() {
                 boxShadow: `0 20px 60px ${alpha(theme.palette.primary.main, 0.15)}`,
               }}>
                 <Image
-                  src="/trust-image.jpg"
+                  src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"
                   alt="Happy travelers"
                   fill
                   style={{ objectFit: 'cover' }}

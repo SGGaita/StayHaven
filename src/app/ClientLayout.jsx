@@ -8,19 +8,25 @@ import theme from '@/theme';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { SessionProvider } from 'next-auth/react';
+import { AuthProvider } from '@/providers/AuthProvider';
+import ClientWrapper from '@/components/ClientWrapper';
 
 export default function ClientLayout({ children }) {
   return (
     <SessionProvider>
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <ReduxProvider>
-          <LocalizationProvider dateAdapter={AdapterDateFns}>
-        {children}
-        <Toaster position="bottom-right" />
-          </LocalizationProvider>
-      </ReduxProvider>
-    </ThemeProvider>
+      <AuthProvider>
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <ReduxProvider>
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <ClientWrapper>
+                {children}
+                <Toaster position="bottom-right" />
+              </ClientWrapper>
+            </LocalizationProvider>
+          </ReduxProvider>
+        </ThemeProvider>
+      </AuthProvider>
     </SessionProvider>
   );
 } 

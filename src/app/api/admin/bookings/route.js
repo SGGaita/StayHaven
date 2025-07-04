@@ -50,6 +50,33 @@ export async function GET(request) {
     // Calculate skip value for pagination
     const skip = (page - 1) * limit;
 
+    // Auto-update booking statuses to COMPLETED for bookings where checkout date has passed
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Set to start of day for accurate comparison
+    
+    try {
+      const updatedBookings = await prisma.booking.updateMany({
+        where: {
+          endDate: {
+            lt: today  // endDate is before today
+          },
+          status: {
+            in: ['CONFIRMED', 'CHECKED_IN', 'ACTIVE'] // Only update bookings that are still active
+          }
+        },
+        data: {
+          status: 'COMPLETED'
+        }
+      });
+
+      if (updatedBookings.count > 0) {
+        console.log(`[API][admin/bookings] Auto-updated ${updatedBookings.count} bookings to COMPLETED status`);
+      }
+    } catch (autoUpdateError) {
+      console.error('Error auto-updating booking statuses:', autoUpdateError);
+      // Continue with fetching bookings even if auto-update fails
+    }
+
     // Build where clause for search and filters
     const where = buildWhereClause(search, status);
 
