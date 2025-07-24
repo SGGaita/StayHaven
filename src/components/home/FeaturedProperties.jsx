@@ -60,7 +60,7 @@ export default function FeaturedProperties({ properties = [], loading = false, e
         }}
       />
 
-      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, px: { xs: 3, sm: 4, md: 6 } }}>
+      <Container maxWidth={false} sx={{ position: 'relative', zIndex: 1, px: { xs: 3, sm: 4, md: 6 }, maxWidth: '1800px', mx: 'auto' }}>
         <MotionBox
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -200,7 +200,7 @@ export default function FeaturedProperties({ properties = [], loading = false, e
         ) : (
           <MotionGrid
             container
-            spacing={{ xs: 3, md: 4 }}
+            spacing={{ xs: 2, md: 2 }}
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -212,8 +212,7 @@ export default function FeaturedProperties({ properties = [], loading = false, e
                 key={property.id}
                 xs={12}
                 sm={6}
-                md={4}
-                lg={3}
+                md={2.4}
                 variants={itemVariants}
               >
                 <PropertyCard property={property} />

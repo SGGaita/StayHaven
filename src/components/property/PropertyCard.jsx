@@ -157,7 +157,7 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
   return (
     <Link href={`/properties/${id}`} style={{ textDecoration: 'none' }}>
       <MotionCard
-        whileHover={{ y: -4 }}
+        whileHover={{ y: -3 }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{
@@ -165,7 +165,7 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
           ease: 'easeOut'
         }}
         sx={{
-          height: '100%',
+          height: 280, // Square aspect ratio for 4-per-row layout
           borderRadius: 2,
           overflow: 'hidden',
           boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
@@ -177,16 +177,21 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
             '& .property-image': {
               transform: 'scale(1.03)',
             },
+            '& .overlay-content': {
+              transform: 'translateY(-4px)',
+            },
           },
         }}
       >
+        {/* Full Image Background */}
         <Box 
           sx={{ 
-            position: 'relative',
-            height: 240,
-            width: '100%',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             bgcolor: 'grey.100',
-            flexShrink: 0, // Prevent image from shrinking
           }}
         >
           {imageLoading && (
@@ -210,8 +215,8 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
                 bgcolor: 'grey.200',
               }}
             >
-              <BrokenImage sx={{ fontSize: 48, color: 'grey.400', mb: 1 }} />
-              <Typography variant="body2" color="text.secondary">
+              <BrokenImage sx={{ fontSize: 36, color: 'grey.400', mb: 0.5 }} />
+              <Typography variant="caption" color="text.secondary">
                 Image not available
               </Typography>
             </Box>
@@ -231,322 +236,346 @@ export default function PropertyCard({ property, variant = 'default', isLoggedIn
             />
           ) : null}
 
-          <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
-            <IconButton
-              onClick={handleFavoriteClick}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                left: 8,
-                bgcolor: 'rgba(255, 255, 255, 0.85)',
-                backdropFilter: 'blur(2px)',
-                zIndex: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  transform: 'scale(1.05)',
-                },
-                transition: 'all 0.2s',
-              }}
-            >
-              {isFavorite ? (
-                <Favorite sx={{ color: 'error.main' }} />
-              ) : (
-                <FavoriteBorder sx={{ color: 'grey.600' }} />
-              )}
-            </IconButton>
-          </Tooltip>
-
-          <Tooltip title="Share">
-            <IconButton
-              onClick={handleShareClick}
-              sx={{
-                position: 'absolute',
-                top: 8,
-                right: 8,
-                bgcolor: 'rgba(255, 255, 255, 0.85)',
-                backdropFilter: 'blur(2px)',
-                zIndex: 1,
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.9)',
-                  transform: 'scale(1.05)',
-                },
-                transition: 'all 0.2s',
-              }}
-            >
-              <ShareIcon sx={{ color: 'grey.600' }} />
-            </IconButton>
-          </Tooltip>
-
-          <Menu
-            anchorEl={shareAnchorEl}
-            open={Boolean(shareAnchorEl)}
-            onClose={handleShareClose}
+          {/* Dark gradient overlay for text readability */}
+          <Box
             sx={{
-              '& .MuiPaper-root': {
-                borderRadius: 2,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+              position: 'absolute',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)',
+              height: '70%',
+              zIndex: 1,
+            }}
+          />
+        </Box>
+
+        {/* Action Buttons */}
+        <Tooltip title={isFavorite ? "Remove from favorites" : "Add to favorites"}>
+          <IconButton
+            onClick={handleFavoriteClick}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 2,
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 1)',
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.2s',
+            }}
+          >
+            {isFavorite ? (
+              <Favorite sx={{ color: 'error.main', fontSize: 18 }} />
+            ) : (
+              <FavoriteBorder sx={{ color: 'grey.600', fontSize: 18 }} />
+            )}
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title="Share">
+          <IconButton
+            onClick={handleShareClick}
+            size="small"
+            sx={{
+              position: 'absolute',
+              top: 12,
+              right: 12,
+              bgcolor: 'rgba(255, 255, 255, 0.9)',
+              backdropFilter: 'blur(4px)',
+              zIndex: 2,
+              '&:hover': {
+                bgcolor: 'rgba(255, 255, 255, 1)',
+                transform: 'scale(1.05)',
+              },
+              transition: 'all 0.2s',
+            }}
+          >
+            <ShareIcon sx={{ color: 'grey.600', fontSize: 18 }} />
+          </IconButton>
+        </Tooltip>
+
+        <Menu
+          anchorEl={shareAnchorEl}
+          open={Boolean(shareAnchorEl)}
+          onClose={handleShareClose}
+          sx={{
+            '& .MuiPaper-root': {
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+            },
+          }}
+        >
+          <MenuItem 
+            onClick={() => handleShare('facebook')} 
+            sx={{ 
+              gap: 1,
+              '&:hover': {
+                bgcolor: 'primary.lighter',
               },
             }}
           >
-            <MenuItem 
-              onClick={() => handleShare('facebook')} 
-              sx={{ 
-                gap: 1,
-                '&:hover': {
-                  bgcolor: 'primary.lighter',
-                },
-              }}
-            >
-              <Facebook sx={{ color: 'primary.main' }} /> 
-              <Typography variant="body2" color="text.primary">Facebook</Typography>
-            </MenuItem>
-            <MenuItem 
-              onClick={() => handleShare('twitter')} 
-              sx={{ 
-                gap: 1,
-                '&:hover': {
-                  bgcolor: 'primary.lighter',
-                },
-              }}
-            >
-              <Twitter sx={{ color: 'primary.main' }} /> 
-              <Typography variant="body2" color="text.primary">Twitter</Typography>
-            </MenuItem>
-            <MenuItem 
-              onClick={() => handleShare('linkedin')} 
-              sx={{ 
-                gap: 1,
-                '&:hover': {
-                  bgcolor: 'primary.lighter',
-                },
-              }}
-            >
-              <LinkedIn sx={{ color: 'primary.main' }} /> 
-              <Typography variant="body2" color="text.primary">LinkedIn</Typography>
-            </MenuItem>
-            <MenuItem 
-              onClick={() => handleShare('whatsapp')} 
-              sx={{ 
-                gap: 1,
-                '&:hover': {
-                  bgcolor: 'primary.lighter',
-                },
-              }}
-            >
-              <WhatsApp sx={{ color: 'primary.main' }} /> 
-              <Typography variant="body2" color="text.primary">WhatsApp</Typography>
-            </MenuItem>
-          </Menu>
+            <Facebook sx={{ color: 'primary.main' }} /> 
+            <Typography variant="body2" color="text.primary">Facebook</Typography>
+          </MenuItem>
+          <MenuItem 
+            onClick={() => handleShare('twitter')} 
+            sx={{ 
+              gap: 1,
+              '&:hover': {
+                bgcolor: 'primary.lighter',
+              },
+            }}
+          >
+            <Twitter sx={{ color: 'primary.main' }} /> 
+            <Typography variant="body2" color="text.primary">Twitter</Typography>
+          </MenuItem>
+          <MenuItem 
+            onClick={() => handleShare('linkedin')} 
+            sx={{ 
+              gap: 1,
+              '&:hover': {
+                bgcolor: 'primary.lighter',
+              },
+            }}
+          >
+            <LinkedIn sx={{ color: 'primary.main' }} /> 
+            <Typography variant="body2" color="text.primary">LinkedIn</Typography>
+          </MenuItem>
+          <MenuItem 
+            onClick={() => handleShare('whatsapp')} 
+            sx={{ 
+              gap: 1,
+              '&:hover': {
+                bgcolor: 'primary.lighter',
+              },
+            }}
+          >
+            <WhatsApp sx={{ color: 'primary.main' }} /> 
+            <Typography variant="body2" color="text.primary">WhatsApp</Typography>
+          </MenuItem>
+        </Menu>
 
-          {!isImageError && (
-            <Box
-              sx={{
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-                height: '60%',
-                zIndex: 0,
-              }}
-            />
-          )}
-        </Box>
-
-        <CardContent 
-          sx={{ 
-            p: 3,
-            display: 'flex',
-            flexDirection: 'column',
-            flexGrow: 1, // Allow content to grow
-            '& > *': { mb: 2 }, // Add margin bottom to all direct children
-            '& > *:last-child': { mb: 0 }, // Remove margin from last child
+        {/* Overlaid Content */}
+        <Box
+          className="overlay-content"
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            p: 2.5,
+            zIndex: 2,
+            color: 'white',
+            transition: 'transform 0.3s ease-in-out',
           }}
         >
-          {/* Property Title Section - Fixed Height */}
-          <Box sx={{ height: 64 }}>
-            <Typography
-              variant="h6"
-              sx={{
-                fontWeight: 600,
-                fontSize: '1.1rem',
+          {/* Property Title */}
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 700,
+              fontSize: '1.1rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              color: 'white',
+              mb: 1,
+              lineHeight: 1.3,
+              textShadow: '0 1px 3px rgba(0,0,0,0.5)',
+            }}
+          >
+            {name}
+          </Typography>
+
+          {/* Location */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5 }}>
+            <LocationIcon sx={{ fontSize: 16, mr: 0.5, color: 'rgba(255,255,255,0.9)' }} />
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 500,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                color: 'text.primary',
-                mb: 1,
+                whiteSpace: 'nowrap',
+                fontSize: '0.9rem',
+                color: 'rgba(255,255,255,0.9)',
+                textShadow: '0 1px 2px rgba(0,0,0,0.5)',
               }}
             >
-              {name}
+              {location}
             </Typography>
           </Box>
 
-          {/* Location Section - Fixed Height */}
-          <Box sx={{ height: 24 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary' }}>
-              <LocationIcon sx={{ fontSize: 18, mr: 0.5, color: 'primary.main' }} />
-              <Typography 
-                variant="body2" 
-                sx={{ 
-                  fontWeight: 500,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {location}
-              </Typography>
-            </Box>
-          </Box>
-
-          {/* Property Type and Rating Section - Fixed Height */}
-          <Box sx={{ height: 24, display: 'flex', gap: 1, flexWrap: 'nowrap' }}>
+          {/* Property Type and Rating */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 1.5, flexWrap: 'wrap' }}>
             <Chip
-              icon={<HotelIcon sx={{ fontSize: 16, color: 'primary.main' }} />}
+              icon={<HotelIcon sx={{ fontSize: 14 }} />}
               label={propertyType}
               size="small"
               sx={{ 
                 borderRadius: 1,
                 height: 24,
-                bgcolor: 'primary.lighter',
-                color: 'primary.main',
-                fontWeight: 400,
+                bgcolor: 'rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(10px)',
+                color: 'white',
+                fontWeight: 500,
+                fontSize: '0.75rem',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                '& .MuiChip-icon': { color: 'rgba(255,255,255,0.8)' },
               }}
             />
             {avgRating > 0 ? (
               <Chip
-                icon={<StarIcon sx={{ fontSize: 16 }} />}
+                icon={<StarIcon sx={{ fontSize: 14, color: '#FFD700' }} />}
                 label={`${avgRating.toFixed(1)} (${reviewCount})`}
                 size="small"
                 sx={{ 
                   borderRadius: 1,
                   height: 24,
-                  bgcolor: 'rgba(255, 180, 0, 0.1)',
-                  color: '#FFB400',
-                  fontWeight: 400,
+                  bgcolor: 'rgba(255, 215, 0, 0.2)',
+                  backdropFilter: 'blur(10px)',
+                  color: '#FFD700',
+                  fontWeight: 500,
+                  fontSize: '0.75rem',
+                  border: '1px solid rgba(255, 215, 0, 0.3)',
                 }}
               />
             ) : (
               <Chip
-                label="No ratings yet"
+                label="No ratings"
                 size="small"
                 sx={{ 
                   borderRadius: 1,
                   height: 24,
-                  bgcolor: 'grey.100',
-                  color: 'text.secondary',
+                  bgcolor: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  color: 'rgba(255,255,255,0.8)',
                   fontWeight: 400,
+                  fontSize: '0.75rem',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
                 }}
               />
             )}
           </Box>
 
-          {/* Amenities Section - Fixed Height */}
-          <Box sx={{ height: 24, display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
+          {/* Amenities Section - Reduced Height and Simplified */}
+          <Box sx={{ height: 20, display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden' }}>
             {amenitiesList.length > 0 ? (
               <>
-                {amenitiesList.slice(0, 2).map((amenity) => (
+                <Chip
+                  label={amenitiesList[0]}
+                  size="small"
+                  variant="outlined"
+                  sx={{ 
+                    borderRadius: 1,
+                    height: 20, // Reduced from 24
+                    borderColor: 'primary.lighter',
+                    color: 'text.secondary',
+                    fontSize: '0.7rem', // Made smaller
+                    '& .MuiChip-label': { px: 1 }, // Reduced padding
+                    '&:hover': {
+                      bgcolor: 'primary.lighter',
+                      color: 'primary.main',
+                    },
+                  }}
+                />
+                {amenitiesList.length > 1 && (
                   <Chip
-                    key={amenity}
-                    label={amenity}
+                    label={`+${amenitiesList.length - 1} more`}
                     size="small"
                     variant="outlined"
                     sx={{ 
                       borderRadius: 1,
-                      height: 24,
+                      height: 20, // Reduced from 24
                       borderColor: 'primary.lighter',
                       color: 'text.secondary',
-                      '&:hover': {
-                        bgcolor: 'primary.lighter',
-                        color: 'primary.main',
-                      },
-                    }}
-                  />
-                ))}
-                {amenitiesList.length > 2 && (
-                  <Chip
-                    label={`+${amenitiesList.length - 2} more`}
-                    size="small"
-                    variant="outlined"
-                    sx={{ 
-                      borderRadius: 1,
-                      height: 24,
-                      borderColor: 'primary.lighter',
-                      color: 'text.secondary',
+                      fontSize: '0.7rem', // Made smaller
+                      '& .MuiChip-label': { px: 1 }, // Reduced padding
                     }}
                   />
                 )}
               </>
             ) : (
               <Chip
-                label="No amenities listed"
+                label="No amenities"
                 size="small"
                 variant="outlined"
                 sx={{ 
                   borderRadius: 1,
-                  height: 24,
+                  height: 20, // Reduced from 24
                   borderColor: 'grey.200',
                   color: 'text.secondary',
+                  fontSize: '0.7rem', // Made smaller
+                  '& .MuiChip-label': { px: 1 }, // Reduced padding
                 }}
               />
             )}
           </Box>
 
-          {/* Price and Action Section - Fixed Height */}
+          {/* Price and Action */}
           <Box 
             sx={{ 
-              height: 48,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              mt: 'auto', // Push to bottom
-              pt: 2,
-              borderTop: '1px solid',
-              borderColor: 'divider',
             }}
           >
             <Typography 
               variant="h6" 
               sx={{ 
-                fontWeight: 600,
-                color: 'primary.main',
+                fontWeight: 700,
+                color: 'white',
                 display: 'flex',
                 alignItems: 'baseline',
+                fontSize: '1.2rem',
+                textShadow: '0 1px 3px rgba(0,0,0,0.5)',
               }}
             >
               ${price.toLocaleString()}
               <Typography 
                 component="span" 
                 variant="body2" 
-                color="text.secondary" 
-                sx={{ ml: 0.5 }}
+                sx={{ 
+                  ml: 0.5,
+                  color: 'rgba(255,255,255,0.8)',
+                  fontSize: '0.85rem',
+                }}
               >
                 /night
               </Typography>
             </Typography>
             <Button
-              variant="outlined"
+              variant="contained"
               size="small"
               sx={{
-                borderRadius: 1.5,
+                borderRadius: 2,
                 textTransform: 'none',
                 px: 2,
-                py: 0.5,
-                borderColor: 'primary.main',
+                py: 0.75,
+                bgcolor: 'rgba(255, 255, 255, 0.9)',
+                backdropFilter: 'blur(10px)',
                 color: 'primary.main',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
                 '&:hover': {
-                  bgcolor: 'primary.lighter',
-                  borderColor: 'primary.dark',
-                  color: 'primary.dark',
+                  bgcolor: 'white',
+                  transform: 'translateY(-1px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                 },
               }}
             >
               View Details
             </Button>
           </Box>
-        </CardContent>
+        </Box>
 
         <LoginModal 
           open={showLoginModal} 
